@@ -3,304 +3,212 @@
 namespace App\Http\Controllers\Admin\Settings\RolePermissions\Roles;
 
 use App\Http\Controllers\Controller;
-use App\Models\Permission;
 use Illuminate\Support\Str;
-use App\Models\PermissionGroup;
-use App\Models\Role;
-use Illuminate\Support\Facades\Schema;
-use App\Models\User;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Filesystem\Filesystem;
+use Spatie\Permission\Models\Role;
+use App\Repositories\SearchRepo;
+use App\Services\NestedRoutes\GetNestedRoutes;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Spatie\Permission\Models\Permission;
 
 class RolesController extends Controller
 {
 
     protected $leftTrim = 'api';
+    protected $permissions = [];
 
     /**
      * return permissiongroup's index view
      */
     public function index()
     {
-        $roles = Role::all();
+        $roles = Role::query();
 
-        return [
-            'code' => 200,
-            'data' => $roles
-        ];
+        return SearchRepo::of($roles, ['name'], ['name', 'id'], ['name', 'guard_name'])
+            ->addColumn('action', function ($role) {
+                return '
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="icon icon-list2 font-20"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item navigate" href="/admin/settings/role-permissions/roles/' . $role->id . '">View</a></li>
+                    <li><a class="dropdown-item prepare-edit" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/' . $role->id . '">Edit</a></li>
+                    <li><a class="dropdown-item prepare-status-update" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/' . $role->id . '/status-update">' . ($role->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+                </ul>
+            </div>
+            ';
+            })->paginate();
     }
 
     /**
      * store permissiongroup
      */
-    public function store()
+    public function store(Request $request)
     {
 
-        request()->validate($this->getValidationFields(PermissionGroup::class, ['user_id', 'slug', 'is_default', 'slugs', 'methods', 'routes']));
+        $data = $request->all();
 
-        $data = \request()->all();
+        $validateUser = Validator::make(
+            $data,
+            [
+                'name' => 'required|unique:roles,name,' . $request->id . ',id',
+                'description' => 'nullable',
+                'guard_name' => 'required'
+            ]
+        );
 
-        $data['slug'] = Str::slug($data['slug'] ?? $data['name']);
-
-        $routes = (array) $data['routes'];
-
-        $arr = [];
-        foreach ($routes as $route) {
-
-
-            $key = $this->search($route['path'], $arr, 'path');
-            if ($key === null)
-                $arr[] = $route;
-            else
-                $arr[$key] = [...$arr[$key], 'methods' => array_values(array_unique([...$arr[$key]['methods'], ...$route['methods']]))];
+        if ($validateUser->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'validation error',
+                'errors' => $validateUser->errors()
+            ], 401);
         }
 
-        [$routes, $slugs] = $this->routesSeparete($arr);
+        $action = 'created';
+        if ($request->id)
+            $action = 'updated';
 
-        $data['slugs'] = json_encode($slugs);
-        $data['routes'] = json_encode($routes);
-
-        if (!isset($data['user_id'])) {
-            if (Schema::hasColumn('permission_groups', 'user_id'))
-                $data['user_id'] = currentUser()->id;
-        }
-        if (\request()->id) {
-            $action = "updated";
-        } else {
-            $action = "saved";
-        }
-
-        if (!request()->id) {
-            $data['is_default'] = false;
-            if (PermissionGroup::count() === 0)
-                $data['is_default'] = true;
-        }
-
-        $res = PermissionGroup::updateOrCreate(['_id' => request()->id ?? str()->random(20)], $data);
-        return response(['type' => 'success', 'message' => 'PermissionGroup ' . $action . ' successfully', 'data' => $res]);
+        $res = Role::updateOrCreate(['id' => $request->id], $data);
+        return response(['type' => 'success', 'message' => 'Role ' . $action . ' successfully', 'data' => $res]);
     }
 
-    function search($id, $array, $search_key)
+    function update(Request $request, $id)
     {
-        foreach ($array as $key => $val) {
-            if ($val[$search_key] === $id) {
-                return $key;
-            }
-        }
-        return null;
+        $request->merge(['id' => $id]);
+        return $this->store($request);
     }
 
-    function routesSeparete($arr)
+    public function show($id)
     {
-
-        $routes = $slugs = [];
-        foreach ($arr as $route) {
-            [$routes[], $slugs[]] = [$route['path'], $route['slug']];
-        }
-
-        return [$routes, $slugs];
+        $role = Role::findOrFail($id);
+        return response()->json([
+            'status' => true,
+            'data' => $role,
+        ]);
     }
 
-    function cleanArray($array, $separator)
-    {
-        return
-            array_values(array_unique(
-                array_map(function ($item) use ($separator) {
-                    $parts = explode($separator, $item);
 
-                    $arr = [];
-                    $prevPart = null;
-                    foreach ($parts as $part) {
-                        if ($prevPart != $part) {
-                            $arr[] = $part;
-                        }
-
-                        $prevPart = $part;
-                    }
-
-                    return implode($separator, $arr);
-                }, $array)
-            ));
-    }
-
-    /**
-     * return permissiongroup values
-     */
-    public function list()
-    {
-        $permissiongroups = Permission::all();
-
-        return [
-            'code' => 200,
-            'data' => $permissiongroups
-        ];
-    }
-
-    function getRoutes($routes, $resolve_name, $prefix)
+    function storePermissions(Request $request, $id)
     {
 
-        $routes = collect(Route::getRoutes())->filter(function ($route) use ($prefix) {
-            return $route->getAction()['prefix'] === $prefix;
-        });
+        $role = Role::find($id);
+        if (!$role) return response(['message' => 'Role not found', 'status' => false,], 404);
 
-        // return $routes;
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'permissions' => 'required|array',
+            ]
+        );
 
-        $menu = $routes->map(function ($route) use ($resolve_name, $prefix) {
-
-            $uri = trim(preg_replace('#^' . $prefix . '#', '', $route->uri), '/');
-
-            $name = str_replace('-', ' ', $uri);
-            if ($route->uri == $route->getAction()['prefix'])
-                $name = 'index';
-
-            if (isset($route->action['controller']))
-                [$namespace, $name] = explode('@', $route->action['controller']);
-
-            if ($route->getName()) {
-                $parts = explode('.', $route->getName());
-                $name = end($parts);
-            }
-
-            $resolve_name .= '/' . trim(preg_replace('#^' . $this->leftTrim . '#', '', $uri), '/');
-            $resolve_name = trim(preg_replace('#/+#', '/', $resolve_name), '/');
-
-            return [
-                'children' => [],
-                'path' => $this->resolve($resolve_name, '/') . '@' . implode('|@', $route->methods()),
-                'slug' => $this->resolve($resolve_name, '.'),
-                'title' => Str::title(trim(preg_replace('#/+|_|-#', ' ', $name), ' ')),
-                'routes' => []
-            ];
-        })->values()->toArray();
-
-        return $menu;
-    }
-
-    function resolve($resolve_name, $seperator)
-    {
-        return trim(preg_replace('#/+#', $seperator, $resolve_name), $seperator);
-    }
-
-    public function listRoutes()
-    {
-
-        $prefix = 'api/admin';
-
-        $routes = collect(Route::getRoutes())->filter(fn ($route) => Str::startsWith($route->getAction()['prefix'], $prefix))->sort(fn ($a, $b)  => explode('/', $a->getAction()['prefix']) > explode('/', $b->getAction()['prefix']));
-
-        $out = [];
-
-        foreach ($routes as $route) {
-
-            $prefix = $route->getAction()['prefix'];
-
-            $resolve_name = $prefix;
-            $resolve_name = preg_replace('#^' . $this->leftTrim . '#', '', $resolve_name);
-
-            $parts = explode('/', $prefix);
-            $cur = &$out;
-            $tmp_path_arr = [];
-            foreach ($parts as $part) {
-
-                array_push($tmp_path_arr, $part);
-
-                $tmp_path = implode('/', $tmp_path_arr);
-
-                $tmp_path_echo = trim(preg_replace('#^' . $this->leftTrim . '#', '', $tmp_path), '/');
-
-                $tmp_path == $tmp_path_echo;
-
-                if ($part !== 'api') {
-
-                    if (!key_exists($part, $cur)) {
-
-                        $nam = explode('/', $resolve_name);
-                        $nam = end($nam);
-
-                        $path = $tmp_path !== $prefix ? $tmp_path_echo : trim(preg_replace('#/+#', '/', $resolve_name), '/');
-                        $cur[$part] = [
-                            'children' => [],
-                            'path' => $path,
-                            'slug' => $tmp_path !== $prefix ? $tmp_path_echo : trim(preg_replace('#/+#', '.', $resolve_name), '.'),
-                            'title' => Str::title($tmp_path !== $prefix ? $tmp_path_echo : $nam),
-                            'routes' => $tmp_path !== $prefix ? [] : $this->getRoutes($routes, $resolve_name, $prefix)
-                        ];
-                    }
-
-                    $cur = &$cur[$part]['children'];
-                }
-            }
-
-            unset($cur);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'validation error',
+                'errors' => $validator->errors()
+            ], 401);
         }
 
-        // dd($out);
+        $permissions = $request->permissions;
+        $databasePermissions = [];
+        $jsonPermissions = [];
+        foreach ($permissions as $permission) {
+            $parts = explode(',', $permission);
 
-        // unset($out['admin']['children']);
+            $uri = $parts[0];
+            $title = Str::slug($parts[1], '_');
+            $slug = Str::slug(Str::replace('/', ' ', Str::before($uri, '@')), '.');
+            if (!Str::endsWith($slug, $title)) $slug .= '.' . $title;
 
-        return [
-            'code' => 20000,
-            'data' => $out
-        ];
-    }
-
-    public function listRoles()
-    {
-
-        $permissiongroups = PermissionGroup::all();
-
-        return [
-            'code' => 20000,
-            'data' => $permissiongroups
-        ];
-    }
-
-    public function addUser()
-    {
-        dd('is to add');
-        $permissiongroup = PermissionGroup::findOrFail(\request('permission_group_id'));
-        $user = User::findOrFail(\request('user_id'));
-        $user->permission_group_id = $permissiongroup->id;
-        $user->save();
-
-        $this->user_mapping_update($user, true);
-        return redirect()->back()->with('notice', ['type' => 'success', 'message' => 'User added successfully']);
-    }
-
-    public function removeUser($id)
-    {
-        $user = User::findOrFail($id);
-        if ($user->id == auth()->id()) {
-            return back()->with('notice', ['type' => 'warning', 'message' => 'You cannot remove yourself from a Permission Group']);
-        } else {
-            $this->user_mapping_update($user);
-            $user->permission_group_id = 0;
-            $user->save();
-            return back()->with('notice', ['type' => 'success', 'message' => 'User removed successfully']);
+            Permission::updateOrCreate(['name' => $slug], ['name' => $slug, 'uri' => $uri, 'guard_name' => 'api', 'user_id' => auth()->id()]);
+            $databasePermissions[] = $slug;
+            $jsonPermissions[] = $uri;
         }
+
+        // Sync role with permissions
+        $role->syncPermissions($databasePermissions);
+
+        // generate role json
+        $this->generateJson($role, $jsonPermissions);
+
+        return response([
+            'status' => 'success',
+            'message' => 'Persssions saved!',
+            'data' => Permission::whereNotNull('uri')->get()
+        ]);
     }
 
-    /**
-     * toggle permissiongroup status
-     */
-    public function togglePermissionGroupStatus($permissiongroup_id)
-    {
-        $permissiongroup = PermissionGroup::findOrFail($permissiongroup_id);
-        $state = $permissiongroup->status == 1 ? 'Deactivated' : 'Activated';
-        $permissiongroup->status = $permissiongroup->status == 1 ? 0 : 1;
-        $permissiongroup->save();
-        return response(['type' => 'success', 'message' => 'PermissionGroup #' . $permissiongroup->id . ' has been ' . $state]);
-    }
-
-    /**
-     * delete permissiongroup
-     */
     public function destroy($permissiongroup_id)
     {
-        $permissiongroup = PermissionGroup::findOrFail($permissiongroup_id);
+        $permissiongroup = Role::findOrFail($permissiongroup_id);
         if ($permissiongroup->is_default)
             return response(['type' => 'failure', 'message' => 'Default PermissionGroup cannot be deleted']);
 
         $permissiongroup->delete();
         return response(['type' => 'success', 'message' => 'PermissionGroup deleted successfully']);
+    }
+
+    function generateJson($role = null, $permissions = null)
+    {
+        $this->permissions = $permissions;
+
+        $allRoutes = (new GetNestedRoutes())->list();
+
+        $filteredRoutes = $this->filterAllRoutes($allRoutes);
+        $filePath = storage_path('/app/system/roles/' . Str::slug($role->name) . '.json');
+        $jsonString = json_encode($filteredRoutes, JSON_PRETTY_PRINT);
+
+        // Create the directory if it does not exist
+        $filesystem = new Filesystem();
+        $filesystem->makeDirectory(dirname($filePath), 0755, true, true);
+
+        // Save the JSON data to the file
+        $filesystem->put($filePath, $jsonString);
+    }
+
+
+    function filterAllRoutes($routes, $folder = '')
+    {
+        $filteredRoutes = [];
+
+        foreach ($routes as $key => $item) {
+            $currentFolder = trim($folder . '/' . $key, '/');
+
+            if ($this->includeFolder($currentFolder)) {
+
+                if (isset($item['children'])) {
+                    $newRoutes = null;
+                    if (isset($item['children']['routes']) && count($item['children']['routes']) > 0) {
+                        $newRoutes = $this->filterRoutes($item['children']['routes']);
+                    }
+
+                    $filteredChildRoutes = $this->filterAllRoutes($item['children'], $currentFolder);
+                    $filteredChildRoutes['routes'] = $newRoutes ?? [];
+
+                    if (!empty($filteredChildRoutes)) {
+                        $item['children'] = $filteredChildRoutes;
+                    } else {
+                        unset($item['children']);
+                    }
+                }
+
+                $filteredRoutes[$key] = $item;
+            }
+        }
+
+        return $filteredRoutes;
+    }
+
+    function filterRoutes($routes)
+    {
+        return array_filter($routes, fn ($r) => in_array($r['uri_methods'], $this->permissions));
+    }
+
+    function includeFolder($folder)
+    {
+        return in_array($folder, $this->permissions);
     }
 }

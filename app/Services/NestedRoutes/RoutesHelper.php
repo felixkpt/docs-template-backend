@@ -73,7 +73,8 @@ class RoutesHelper
                             'slug' => $slug,
                             'title' => $name,
                             'folder' => $folder_after_nested,
-                            'hidden' => $route->isHiddenRoute()
+                            'hidden' => $route->hiddenRoute(),
+                            'icon' => $route->getIcon()
                         ];
                     });
 
@@ -121,7 +122,7 @@ class RoutesHelper
         $prefix = strtolower($prefix . $ext_route);
 
         $res = [
-            'prefix' => $prefix ?: '/'.$folder_after_nested,
+            'prefix' => $prefix ?: '/' . $folder_after_nested,
             'file_path' => $file_path,
             'folder_after_nested' => $folder_after_nested,
         ];

@@ -22,6 +22,8 @@ $prefix = 'api/admin';
 // Middlewares to be passed before accessing any route
 $middleWares = ['api', 'nested_routes_auth'];
 
+$middleWares[] = 'auth:sanctum';
+
 Route::middleware(array_filter(array_merge($middleWares, [])))
     ->prefix($prefix)
     ->group(function () use($nested_routes_folder) {

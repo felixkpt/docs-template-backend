@@ -39,6 +39,7 @@ class GetNestedRoutes
         // Group the routes by folder hierarchy
         $nestedRoutes = $this->groupRoutesByFolder($nestedRoutes);
 
+
         return $nestedRoutes;
     }
 
@@ -68,6 +69,7 @@ class GetNestedRoutes
 
         return $groupedRoutes;
     }
+
 
     function printRoutes($routes, $indent = 0)
     {
