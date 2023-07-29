@@ -11,20 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('permissions', function (Blueprint $table) {
-            $table->string('uri')->nullable();
-            $table->unsignedBigInteger('user_id');
+        Schema::create('issue_categories', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->tinyInteger('status')->unsigned()->default(1);
+            $table->unsignedBigInteger('user_id')->default(0);
+            $table->timestamps();
         });
     }
-    
+
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::table('permissions', function (Blueprint $table) {
-            $table->dropColumn('uri');
-            $table->dropColumn('user_id');
-        });
+        Schema::dropIfExists('issue_categories');
     }
 };

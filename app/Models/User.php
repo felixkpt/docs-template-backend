@@ -19,9 +19,31 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'first_name',
+        'middle_name',
+        'last_name',
         'name',
         'email',
+        'phone',
+        'role',
+        'status',
+        'two_factor_valid',
+        'last_login_date',
+        'two_factor_expires_at',
+        'two_factor_code',
+        'email_verified_at',
         'password',
+        'api_token',
+        'avatar',
+        'permission_group_id',
+        'session_id',
+        'is_session_valid',
+        'allowed_session_no',
+        'is_online',
+        'remember_token',
+        'two_factor_enabled',
+        'is_calltronix',
+        'theme',
     ];
 
     /**

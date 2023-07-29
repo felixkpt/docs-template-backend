@@ -65,13 +65,14 @@ class PermissionsController extends Controller
     {
         $role = Role::find($id);
         if (!$role) {
-            return response()->json(['error' => 'Role not found'], 404);
+            return response()->json(['message' => 'Role not found'], 404);
         }
 
         // Get JSON from storage
-        $filePath = ('system/roles/' . Str::slug($role->name) . '.json');
+        $filePath = storage_path('/app/system/roles/' . Str::slug($role->name) . '_permissions.json');
+
         if (!Storage::exists($filePath)) {
-            return response()->json(['error' => 'Role ' . $role->name . ' permissions file not found'], 404);
+            return response()->json(['message' => 'Role ' . $role->name . ' permissions file not found'], 404);
         }
 
         $jsonContent = file_get_contents(Storage::path($filePath));

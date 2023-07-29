@@ -12,6 +12,25 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call([
+            AdminUserSeeder::class,
+            PermissionSeeder::class,
+            RoleSeeder::class,
+            UsersTableSeeder::class,
+            CompanyTypeSeeder::class,
+            CompaniesTableSeeder::class,
+            DepartmentSeeder::class,
+            IssueSourceSeeder::class,
+            IssueCategorySeeder::class,
+            DispositionSeeder::class,
+            SlaLevelSeeder::class,
+            QueueSeeder::class,
+            TicketStatusSeeder::class,
+            
+            CustomersTableSeeder::class,
+            TicketSeeder::class,
+        ]);
+
         // \App\Models\User::factory(10)->create();
 
         // \App\Models\User::factory()->create([

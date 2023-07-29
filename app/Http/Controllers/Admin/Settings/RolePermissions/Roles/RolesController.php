@@ -158,7 +158,7 @@ class RolesController extends Controller
         $allRoutes = (new GetNestedRoutes())->list();
 
         $filteredRoutes = $this->filterAllRoutes($allRoutes);
-        $filePath = storage_path('/app/system/roles/' . Str::slug($role->name) . '.json');
+        $filePath = storage_path('/app/system/roles/' . Str::slug($role->name) . '_permissions.json');
         $jsonString = json_encode($filteredRoutes, JSON_PRETTY_PRINT);
 
         // Create the directory if it does not exist
