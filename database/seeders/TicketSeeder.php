@@ -16,6 +16,7 @@ use App\Models\TicketStatus;
 use App\Models\SlaLevel;
 use Illuminate\Support\Carbon;
 use App\Services\Client;
+use Illuminate\Support\Arr;
 
 class TicketSeeder extends Seeder
 {
@@ -27,8 +28,12 @@ class TicketSeeder extends Seeder
      */
     public function run()
     {
-        $totalRecords = 50;
-        $batchSize = 1000; // Set the desired batch size
+
+        // Set the total number you want to seed
+        $totalRecords = 520000;
+        $batchSize = 100; // Set the desired batch size
+
+        if (Ticket::count() >= $totalRecords) return;
 
         $totalBatches = ceil($totalRecords / $batchSize);
 
@@ -37,6 +42,9 @@ class TicketSeeder extends Seeder
             $end = min($batch * $batchSize, $totalRecords);
 
             $this->seedBatch($start, $end);
+
+            // "Behold, the 'Sleepy Seeder' granting the server some shut-eye between batches, dreaming of data wonders! 😴💤"
+            sleep(10);
         }
     }
 
@@ -102,11 +110,13 @@ class TicketSeeder extends Seeder
                 'user_id' => User::inRandomOrder()->first()->id,
                 // 80% 1
                 'status' => rand(0, 10) <= 8 ? 1 : 0,
+                'created_at' => Carbon::now()->subMinutes(rand(0, 1440 * 90)), // Subtract a random number of minutes (up to 24 hours * x days)
+                'updated_at' => Carbon::now(),
             ]);
 
             // Generate a random attachment for 30% of the tickets (you can adjust this percentage as needed)
             if (rand(1, 100) <= 30) {
-                $this->saveRandomAttachmentForTicket($ticket);
+                $this->saveTicketAttachments($ticket);
             }
 
             $comment = null;
@@ -123,6 +133,9 @@ class TicketSeeder extends Seeder
                     'previous_department_id' => 0,
                     'department_id' => $ticket->department_id,
                     'comment' => $comment, // Use the generated comment
+                    'created_at' => $ticket->created_at,
+                    'updated_at' => $ticket->updated_at,
+
                 ],
                 null,
             );
@@ -161,13 +174,47 @@ class TicketSeeder extends Seeder
     }
 
     /**
-     * Get Random attachments for a ticket and return the file path.
+     * Get attachments for a ticket and return the file path.
      *
      * @param int $ticketId
      * @param string $attachmentType
      * @return string|null
      */
-    private function saveRandomAttachmentForTicket($ticket)
+    private function saveTicketAttachments($ticket)
+    {
+        $randomNumber = rand(1, 100); // Generate a random number between 1 and 100.
+
+        if ($randomNumber <= 50) {
+            // Generate 1 attachment
+            $this->generateAttachment($ticket);
+        } elseif ($randomNumber <= 70) {
+            // Generate 2 attachments
+            $this->generateAttachment($ticket);
+            $this->generateAttachment($ticket);
+        } elseif ($randomNumber <= 80) {
+            // Generate 3 attachments
+            $this->generateAttachment($ticket);
+            $this->generateAttachment($ticket);
+            $this->generateAttachment($ticket);
+        } else {
+            // Generate 4 attachments
+            $this->generateAttachment($ticket);
+            $this->generateAttachment($ticket);
+            $this->generateAttachment($ticket);
+            $this->generateAttachment($ticket);
+        }
+
+        return true;
+    }
+
+    /**
+     * Generate a single attachment for the ticket and save it.
+     *
+     * @param int $ticketId
+     * @param string $attachmentType
+     * @return void
+     */
+    private function generateAttachment($ticket)
     {
         // Get the current date using Carbon
         $now = Carbon::now();
@@ -177,6 +224,12 @@ class TicketSeeder extends Seeder
 
         $attachmentFilename = 'ticket_' . $ticket->id . '_' . now()->format('Ymd_His') . '.jpg'; // Use the desired file extension
 
-        return Client::downloadFileFromUrl('https://picsum.photos/200/300', $attachmentFolder, $attachmentFilename, $ticket);
+        $dimensions = Arr::random([
+            '200/300', '300/400', '200', '300', '400', '500', '700', '1200',
+            '800/600', '600/800', '800', '600', '1000', '900', '1024/768',
+            '1600/900', '1920/1080', '1280/720', '1366/768'
+        ]);
+
+        Client::downloadFileFromUrl('https://picsum.photos/' . $dimensions, $attachmentFolder, $attachmentFilename, $ticket);
     }
 }

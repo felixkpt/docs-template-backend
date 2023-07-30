@@ -46,7 +46,8 @@ class RoutesHelper
                     })->map(function ($route) use ($folder_after_nested) {
                         $uri = $route->uri;
 
-                        $uri_methods = $uri . '@' . implode('|@', $route->methods());
+                        $methods = '@' . implode('|@', $route->methods());
+                        $uri_methods = $uri . $methods;
 
                         $slug = Str::slug(Str::replace('/', '.', $uri), '.');
 
@@ -69,6 +70,7 @@ class RoutesHelper
 
                         return [
                             'uri' => $uri,
+                            'methods' => $methods,
                             'uri_methods' => $uri_methods,
                             'slug' => $slug,
                             'title' => $name,

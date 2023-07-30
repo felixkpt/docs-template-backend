@@ -15,8 +15,8 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
 
-        $schedule->command(RunSeeders::class)
-            ->hourly()
+        $schedule->command('seeders:run')
+            ->everyTenMinutes()
             ->withoutOverlapping();
     }
 

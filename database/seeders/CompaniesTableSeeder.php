@@ -17,9 +17,13 @@ class CompaniesTableSeeder extends Seeder
     {
         $faker = FakerFactory::create();
 
-        $totalCompanies = 100; // Set the total number of companies you want to seed
+        // Set the total number you want to seed
+        $totalRecords = 510;
+        $batchSize = 100; // Set the desired batch size
 
-        for ($i = 1; $i <= $totalCompanies; $i++) {
+        if (Company::count() >= $totalRecords) return;
+
+        for ($i = 1; $i <= $totalRecords; $i++) {
             $email = $faker->unique()->safeEmail;
 
             Company::updateOrCreate(['email' => $email], [

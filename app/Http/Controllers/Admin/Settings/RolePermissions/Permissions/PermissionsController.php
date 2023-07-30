@@ -58,6 +58,17 @@ class PermissionsController extends Controller
         //
     }
 
+    function getRolePermissions($id)
+    {
+        $role = Role::findOrFail($id);
+
+        $permissions = $role->permissions()->get();
+        if (request()->uri)
+            $permissions = $permissions->pluck('uri');
+
+        return response(['data' => $permissions]);
+    }
+
     /**
      * Update the specified resource in storage.
      */
@@ -69,7 +80,7 @@ class PermissionsController extends Controller
         }
 
         // Get JSON from storage
-        $filePath = storage_path('/app/system/roles/' . Str::slug($role->name) . '_permissions.json');
+        $filePath = '/system/roles/' . Str::slug($role->name) . '_permissions.json';
 
         if (!Storage::exists($filePath)) {
             return response()->json(['message' => 'Role ' . $role->name . ' permissions file not found'], 404);

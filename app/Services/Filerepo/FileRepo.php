@@ -182,6 +182,12 @@ class  FileRepo
         $fileSize = $file->getSize();
         $created_by = auth()->check() ? auth()->user()->id : null;
 
+
+        if (is_array($path)) {
+            Log::critical('FileRepo::', ['message' => $path]); 
+            return null;
+        }
+
         $modelFile = ModelFile::create([
             'model_instance_id' => $model_instance_id,
             'model_id' => $model_id,

@@ -8,4 +8,4 @@ Route::post('/', [RolesController::class, 'store'])->hidden();
 Route::get('/generateJson', [RolesController::class, 'generateJson'])->hidden();
 Route::get('/{id}', [RolesController::class, 'show'])->hidden();
 Route::put('/{id}', [RolesController::class, 'update'])->hidden();
-Route::post('/{id}/save-permissions', [RolesController::class, 'storePermissions'])->hidden();
+Route::any('/{id}/save-permissions', [RolesController::class, 'storePermissions'])->hidden();

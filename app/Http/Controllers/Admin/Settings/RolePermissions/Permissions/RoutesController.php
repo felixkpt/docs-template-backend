@@ -17,7 +17,7 @@ class RoutesController extends Controller
         $gen = new GetNestedRoutes($prefix, '');
         $nestedRoutes = $gen->list($prefix);
 
-        return response($nestedRoutes);
+        return response(['data' => $nestedRoutes]);
     }
 
     function store()

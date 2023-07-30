@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Customer;
 use App\Models\User;
+use Carbon\Carbon;
 use Faker\Factory as Faker;
 
 class CustomersTableSeeder extends Seeder
@@ -16,8 +17,10 @@ class CustomersTableSeeder extends Seeder
      */
     public function run()
     {
-        $totalRecords = 100;
-        $batchSize = 1000; // Set the desired batch size
+        $totalRecords = 55000;
+        $batchSize = 100; // Set the desired batch size
+
+        if (Customer::count() >= $batchSize) return;
 
         $totalBatches = ceil($totalRecords / $batchSize);
 
@@ -26,6 +29,9 @@ class CustomersTableSeeder extends Seeder
             $end = min($batch * $batchSize, $totalRecords);
 
             $this->seedBatch($start, $end);
+
+            // "Behold, the 'Sleepy Seeder' granting the server some shut-eye between batches, dreaming of data wonders! 😴💤"
+            sleep(10);
         }
     }
 
@@ -78,6 +84,9 @@ class CustomersTableSeeder extends Seeder
                 'contact_person' => $faker->name,
                 'user_id' => User::inRandomOrder()->first()->id,
                 'status' => $faker->boolean(90), // 90% chance of being active (status=1)
+                'created_at' => Carbon::now()->subMinutes(rand(0, 1440 * 90)), // Subtract a random number of minutes (up to 24 hours * x days)
+                'updated_at' => Carbon::now(),
+
             ]);
         }
     }

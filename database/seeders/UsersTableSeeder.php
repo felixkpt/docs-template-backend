@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Services\Client;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
@@ -20,8 +21,12 @@ class UsersTableSeeder extends Seeder
      */
     public function run()
     {
-        $totalRecords = 150;
-        $batchSize = 1000; // Set the desired batch size
+
+        // Set the total number you want to seed
+        $totalRecords = 11100;
+        $batchSize = 100; // Set the desired batch size
+
+        if (User::count() >= $totalRecords) return;
 
         $totalBatches = ceil($totalRecords / $batchSize);
 
@@ -30,6 +35,9 @@ class UsersTableSeeder extends Seeder
             $end = min($batch * $batchSize, $totalRecords);
 
             $this->seedBatch($start, $end);
+
+            // "Behold, the 'Sleepy Seeder' granting the server some shut-eye between batches, dreaming of data wonders! 😴💤"
+            sleep(10);
         }
     }
 
@@ -42,7 +50,7 @@ class UsersTableSeeder extends Seeder
      */
     private function seedBatch($start, $end)
     {
-     
+
         $faker = Faker::create();
 
         for ($i = $start; $i <= $end; $i++) {
@@ -52,17 +60,16 @@ class UsersTableSeeder extends Seeder
 
             $userFromApi = null;
             try {
-            // Fetch data from the API
-            $response = file_get_contents($apiUrl);
+                // Fetch data from the API
+                $response = file_get_contents($apiUrl);
 
-            // Convert JSON response to a PHP object
-            $data = json_decode($response);
+                // Convert JSON response to a PHP object
+                $data = json_decode($response);
 
-            // Get the user data from the API response
-            $userFromApi = $data->results[0];
-
-            }catch(Exception $e) {
-                echo $e->getMessage()."\n";
+                // Get the user data from the API response
+                $userFromApi = $data->results[0];
+            } catch (Exception $e) {
+                echo $e->getMessage() . "\n";
             }
 
             // Fill in the user data with fake data where necessary
@@ -93,7 +100,7 @@ class UsersTableSeeder extends Seeder
             $user_id = User::inRandomOrder()->first()->id ?? 0;
             $status = $faker->boolean(85);
 
-            $user = User::updateOrCreate([
+            $user = User::updateOrCreate(['email' => $email,], [
                 'first_name' => $first_name,
                 'middle_name' => $middle_name,
                 'last_name' => $last_name,
@@ -117,6 +124,8 @@ class UsersTableSeeder extends Seeder
                 'theme' => $theme,
                 'user_id' => $user_id,
                 'status' => $status,
+                'created_at' => Carbon::now()->subMinutes(rand(0, 1440 * 90)), // Subtract a random number of minutes (up to 24 hours * x days)
+                'updated_at' => Carbon::now(),
             ]);
 
             if (isset($userFromApi->picture->large) && $user->wasRecentlyCreated) {
@@ -137,9 +146,14 @@ class UsersTableSeeder extends Seeder
 
     function saveAvatar($userFromApi, $user)
     {
+
+        // Get the current date using Carbon
+        $now = Carbon::now();
+
         // Define the directory where the attachments will be saved
-        $attachmentFolder = 'users';
-        $attachmentFilename = 'users_' . now()->format('Ymd_His') . '.jpg'; // Use the desired file extension
+        $attachmentFolder = 'users/' . $now->year . '/' . $now->month . '/' . $now->day;
+
+        $attachmentFilename = 'user_' . $user->id . '_' . now()->format('Ymd_His') . '.jpg'; // Use the desired file extension
 
         // Download the avatar image and save it to the user's avatar field
         // Randomly choose to use the default avatar URL (70% probability) or download the image (30% probability)

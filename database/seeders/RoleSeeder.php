@@ -113,15 +113,18 @@ class RoleSeeder extends Seeder
         }
 
 
-        try {
-            // Delete the entire directory along with its contents
-            Storage::deleteDirectory('system/roles');
+        if (Role::count() <= $crmRoles) {
 
-            // Success message
-            echo "The directory 'storage/app/system/roles/' and its contents have been deleted.\n";
-        } catch (Exception $e) {
-            // Handle any errors that may occur during the deletion process
-            echo "An error occurred: " . $e->getMessage() . ".\n";
+            try {
+                // Delete the entire directory along with its contents
+                Storage::deleteDirectory('system/roles');
+                
+                // Success message
+                echo "The directory 'storage/app/system/roles/' and its contents have been deleted.\n";
+            } catch (Exception $e) {
+                // Handle any errors that may occur during the deletion process
+                echo "An error occurred: " . $e->getMessage() . ".\n";
+            }
         }
     }
 }

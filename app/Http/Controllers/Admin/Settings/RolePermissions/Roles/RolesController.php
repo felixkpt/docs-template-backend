@@ -17,6 +17,8 @@ class RolesController extends Controller
 
     protected $leftTrim = 'api';
     protected $permissions = [];
+    protected $folder_icons = [];
+    protected $hidden_folders = [];
 
     /**
      * return permissiongroup's index view
@@ -47,6 +49,7 @@ class RolesController extends Controller
      */
     public function store(Request $request)
     {
+
 
         $data = $request->all();
 
@@ -112,7 +115,8 @@ class RolesController extends Controller
             ], 401);
         }
 
-        $permissions = $request->permissions;
+        $permissions = $request->permissions ?? [];
+
         $databasePermissions = [];
         $jsonPermissions = [];
         foreach ($permissions as $permission) {
@@ -123,16 +127,15 @@ class RolesController extends Controller
             $slug = Str::slug(Str::replace('/', ' ', Str::before($uri, '@')), '.');
             if (!Str::endsWith($slug, $title)) $slug .= '.' . $title;
 
-            Permission::updateOrCreate(['name' => $slug], ['name' => $slug, 'uri' => $uri, 'guard_name' => 'api', 'user_id' => auth()->id()]);
-            $databasePermissions[] = $slug;
+            $databasePermissions[] = Permission::updateOrCreate(['name' => $slug], ['name' => $slug, 'uri' => $uri, 'guard_name' => 'api', 'user_id' => auth()->id() ?? 1]);
             $jsonPermissions[] = $uri;
         }
 
         // Sync role with permissions
         $role->syncPermissions($databasePermissions);
 
-        // generate role json
-        $this->generateJson($role, $jsonPermissions);
+       // generate role json
+        $this->generateJson($role, $jsonPermissions, $request);
 
         return response([
             'status' => 'success',
@@ -141,23 +144,16 @@ class RolesController extends Controller
         ]);
     }
 
-    public function destroy($permissiongroup_id)
+    function generateJson($role = null, $permissions = null, $request = null)
     {
-        $permissiongroup = Role::findOrFail($permissiongroup_id);
-        if ($permissiongroup->is_default)
-            return response(['type' => 'failure', 'message' => 'Default PermissionGroup cannot be deleted']);
 
-        $permissiongroup->delete();
-        return response(['type' => 'success', 'message' => 'PermissionGroup deleted successfully']);
-    }
-
-    function generateJson($role = null, $permissions = null)
-    {
         $this->permissions = $permissions;
+        $this->folder_icons = $request->folder_icons;
+        $this->hidden_folders = $request->hidden_folders;
 
         $allRoutes = (new GetNestedRoutes())->list();
-
         $filteredRoutes = $this->filterAllRoutes($allRoutes);
+
         $filePath = storage_path('/app/system/roles/' . Str::slug($role->name) . '_permissions.json');
         $jsonString = json_encode($filteredRoutes, JSON_PRETTY_PRINT);
 
@@ -169,7 +165,6 @@ class RolesController extends Controller
         $filesystem->put($filePath, $jsonString);
     }
 
-
     function filterAllRoutes($routes, $folder = '')
     {
         $filteredRoutes = [];
@@ -177,7 +172,9 @@ class RolesController extends Controller
         foreach ($routes as $key => $item) {
             $currentFolder = trim($folder . '/' . $key, '/');
 
-            if ($this->includeFolder($currentFolder)) {
+            if ($this->includeFolder($currentFolder) && !$this->isHiddenFolder($currentFolder)) {
+
+                $item['icon'] = $this->attachIcon($currentFolder);
 
                 if (isset($item['children'])) {
                     $newRoutes = null;
@@ -204,11 +201,37 @@ class RolesController extends Controller
 
     function filterRoutes($routes)
     {
-        return array_filter($routes, fn ($r) => in_array($r['uri_methods'], $this->permissions));
+        return array_values(array_filter($routes, fn ($r) => in_array($r['uri_methods'], $this->permissions)));
     }
 
     function includeFolder($folder)
     {
         return in_array($folder, $this->permissions);
+    }
+
+    function isHiddenFolder($folder)
+    {
+        return in_array($folder, $this->hidden_folders);
+    }
+
+    function attachIcon($folder)
+    {
+        foreach ($this->folder_icons as $folder_icon) {
+
+            if ($folder_icon[0] == $folder)
+                return  $folder_icon[1];
+        }
+
+        return null;
+    }
+
+    public function destroy($permissiongroup_id)
+    {
+        $permissiongroup = Role::findOrFail($permissiongroup_id);
+        if ($permissiongroup->is_default)
+            return response(['type' => 'failure', 'message' => 'Default PermissionGroup cannot be deleted']);
+
+        $permissiongroup->delete();
+        return response(['type' => 'success', 'message' => 'PermissionGroup deleted successfully']);
     }
 }
