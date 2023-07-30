@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Faker\Factory as Faker;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 
 class UsersTableSeeder extends Seeder
@@ -138,8 +139,12 @@ class UsersTableSeeder extends Seeder
                 // Get $numRoles random role ids
                 $roleIds = Role::inRandomOrder()->limit($numRoles)->pluck('id')->toArray();
 
-                // Assign roles to the user
-                $user->syncRoles($roleIds);
+                try {
+                    // Assign roles to the user
+                    $user->syncRoles($roleIds);
+                } catch (Exception $e) {
+                    Log::critical('Roles/role notfound::', ['message' => $e->getMessage()]);
+                }
             }
         }
     }

@@ -69,7 +69,7 @@ class SearchRepo
                             $query->where($column, 'like', "%$term%");
                         });
                     } else {
-                        $builder->orWhere($column, 'like', "%$term%");
+                        $builder->orwhere($column, 'like', "%$term%");
                     }
                 }
             } elseif ($builder instanceof QueryBuilder) {
@@ -87,18 +87,18 @@ class SearchRepo
             }
         }
 
+        $model_table = $model->getTable();
+
         if (request()->has('orderBy')) {
             $orderBy = Str::lower(request()->orderBy);
 
             if ($model)
-                $col = Str::after($orderBy, $model->getTable() . '.');
-            if ($model && Schema::hasColumn($model->getTable(), $col) || in_array($orderBy, $sortable)) {
+                $col = Str::after($orderBy, $model_table . '.');
+            if ($model && Schema::hasColumn($model_table, $col) || in_array($orderBy, $sortable)) {
                 $orderDirection = request()->orderDirection ?? 'asc';
                 $builder->orderBy($orderBy, $orderDirection);
             }
-        }
-
-        $self->builder = $builder;
+        } else $builder->orderBy($model_table.'.created_at', 'desc');
 
         return $self;
     }

@@ -20,36 +20,31 @@ class RolesController extends Controller
     protected $folder_icons = [];
     protected $hidden_folders = [];
 
-    /**
-     * return permissiongroup's index view
-     */
     public function index()
     {
         $roles = Role::query();
 
-        return SearchRepo::of($roles, ['name'], ['name', 'id'], ['name', 'guard_name'])
+        $roles = SearchRepo::of($roles, ['name'], ['name', 'id'], ['name', 'guard_name'])
             ->addColumn('action', function ($role) {
                 return '
-            <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="icon icon-list2 font-20"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item navigate" href="/admin/settings/role-permissions/roles/' . $role->id . '">View</a></li>
-                    <li><a class="dropdown-item prepare-edit" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/' . $role->id . '">Edit</a></li>
-                    <li><a class="dropdown-item prepare-status-update" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/' . $role->id . '/status-update">' . ($role->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
-                </ul>
-            </div>
-            ';
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="icon icon-list2 font-20"></i>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item navigate" href="/admin/settings/role-permissions/roles/' . $role->id . '">View</a></li>
+                <li><a class="dropdown-item prepare-edit" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/' . $role->id . '">Edit</a></li>
+                <li><a class="dropdown-item prepare-status-update" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/' . $role->id . '/status-update">' . ($role->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+            </ul>
+        </div>
+        ';
             })->paginate();
+
+        return response(['data' => $roles]);
     }
 
-    /**
-     * store permissiongroup
-     */
     public function store(Request $request)
     {
-
 
         $data = $request->all();
 
@@ -93,7 +88,6 @@ class RolesController extends Controller
         ]);
     }
 
-
     function storePermissions(Request $request, $id)
     {
 
@@ -134,7 +128,7 @@ class RolesController extends Controller
         // Sync role with permissions
         $role->syncPermissions($databasePermissions);
 
-       // generate role json
+        // generate role json
         $this->generateJson($role, $jsonPermissions, $request);
 
         return response([

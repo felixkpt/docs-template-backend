@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Settings\Users;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Repositories\SearchRepo;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
 
@@ -11,7 +12,24 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('roles')->get();
+        $users = User::with('roles');
+        $users = SearchRepo::of($users, ['name', 'id'])
+            ->addColumn('action', function ($user) {
+                return '
+    <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="icon icon-list2 font-20"></i>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item prepare-navigate" href="/admin/settings/users/user/' . $user->id . '">View</a></li>
+            <li><a class="dropdown-item prepare-editt" data-id="' . $user->id . '" href="/admin/settings/users/user/' . $user->id . '/edit">Edit</a></li>
+            <li><a class="dropdown-item prepare-status-update" data-id="' . $user->id . '" href="/admin/settings/users/user/' . $user->id . '/status-update">' . ($user->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+            <li><a class="dropdown-item prepare-delete" data-id="' . $user->id . '" href="/admin/settings/users/user/' . $user->id . '">Delete</a></li>
+        </ul>
+    </div>
+    ';
+            })->paginate();
+
         return response(['data' => $users, 'status' => true, 'message' => 'Users list']);
     }
 
@@ -74,7 +92,6 @@ class UserController extends Controller
             $roles = Role::whereIn('id', $request->input('roles'))->get();
             foreach ($roles as $r)
                 $user->assignRole($r);
-
         }
 
         // Additional logic if needed
