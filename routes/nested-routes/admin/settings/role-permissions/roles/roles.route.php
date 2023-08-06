@@ -9,3 +9,4 @@ Route::get('/generateJson', [RolesController::class, 'generateJson'])->hidden();
 Route::get('/{id}', [RolesController::class, 'show'])->hidden();
 Route::put('/{id}', [RolesController::class, 'update'])->hidden();
 Route::any('/{id}/save-permissions', [RolesController::class, 'storePermissions'])->hidden();
+Route::get('/get-menu/{id}', [RolesController::class, 'getRolePermissions'])->hidden();

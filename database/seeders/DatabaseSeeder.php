@@ -12,25 +12,29 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            // AdminUserSeeder::class,
-            // PermissionSeeder::class,
-            // RoleSeeder::class,
-            // UsersTableSeeder::class,
-            // CompanyTypeSeeder::class,
+        $arr = [
+            AdminUserSeeder::class,
+            PermissionSeeder::class,
+            RoleSeeder::class,
+            UsersTableSeeder::class,
+            CompanyTypeSeeder::class,
             CompaniesTableSeeder::class,
-            // DepartmentSeeder::class,
-            // IssueSourceSeeder::class,
-            // IssueCategorySeeder::class,
-            // DispositionSeeder::class,
-            // SlaLevelSeeder::class,
-            // QueueSeeder::class,
-            // TicketStatusSeeder::class,
+            DepartmentSeeder::class,
+            IssueSourceSeeder::class,
+            IssueCategorySeeder::class,
+            DispositionSeeder::class,
+            SlaLevelSeeder::class,
+            QueueSeeder::class,
+            TicketStatusSeeder::class,
 
             CustomersTableSeeder::class,
-            TicketSeeder::class,
             DocumentationSeeder::class,
-        ]);
+            TicketSeeder::class,
+        ];
+
+        shuffle($arr);
+
+        $this->call($arr);
 
         // \App\Models\User::factory(10)->create();
 

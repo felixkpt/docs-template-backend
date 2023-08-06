@@ -18,6 +18,8 @@ class RoleSeeder extends Seeder
 
         // gets all permissions via Gate::before rule; see AuthServiceProvider
 
+        $role_counts = Role::count();
+
         $crmRoles = [
 
             ['name' => 'Super Admin'],
@@ -113,7 +115,7 @@ class RoleSeeder extends Seeder
         }
 
 
-        if (Role::count() <= $crmRoles) {
+        if ($role_counts === 0) {
 
             try {
                 // Delete the entire directory along with its contents

@@ -16,6 +16,7 @@ class PermissionsController extends Controller
 {
     public function index()
     {
+
         $permissions = ModelsPermission::whereNull('uri');
 
         $permissions = SearchRepo::of($permissions, ['name'], ['name', 'id'], ['name', 'guard_name'])
@@ -26,15 +27,15 @@ class PermissionsController extends Controller
             <i class="icon icon-list2 font-20"></i>
             </button>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item navigate" href="/admin/settings/role-permissions/roles/' . $permission->id . '">View</a></li>
-                <li><a class="dropdown-item prepare-edit" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/roles/' . $permission->id . '">Edit</a></li>
-                <li><a class="dropdown-item prepare-status-update" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/roles/' . $permission->id . '/status-update">' . ($permission->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+                <li><a class="dropdown-item prepare-view" href="/admin/settings/role-permissions/permission/' . $permission->id . '">View</a></li>
+                <li><a class="dropdown-item prepare-edit" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/permissions/' . $permission->id . '">Edit</a></li>
+                <li><a class="dropdown-item prepare-status-update" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/permissions/' . $permission->id . '/status-update">' . ($permission->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
             </ul>
         </div>
         ';
             })->paginate();
 
-        return response(['data' => $permissions]);
+        return response(['results' => $permissions]);
     }
 
     public function store(Request $request)
@@ -64,7 +65,7 @@ class PermissionsController extends Controller
             $action = 'updated';
 
         $res = Permission::updateOrCreate(['id' => $request->id], $data);
-        return response(['type' => 'success', 'message' => 'Permission ' . $action . ' successfully', 'data' => $res]);
+        return response(['type' => 'success', 'message' => 'Permission ' . $action . ' successfully', 'results' => $res]);
     }
 
     function update(Request $request, $id)
@@ -79,7 +80,7 @@ class PermissionsController extends Controller
         $role = Permission::findOrFail($id);
         return response()->json([
             'status' => true,
-            'data' => $role,
+            'results' => $role,
         ]);
     }
 
@@ -90,38 +91,24 @@ class PermissionsController extends Controller
     {
         //
     }
-    
+
     function getRolePermissions($id)
     {
-        $permission = Role::findOrFail($id);
 
-        $permissions = $permission->permissions()->get();
+
+        if ($id === 'all') {
+            $permissions = Permission::whereNotNull('uri');
+        } else {
+            $permission = Role::findOrFail($id);
+            $permissions = $permission->permissions();
+        }
+
+        $permissions = $permissions->get();
+
         if (request()->uri)
             $permissions = $permissions->pluck('uri');
 
-        return response(['data' => $permissions]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function getUserPermissions(string $id)
-    {
-        $permission = Role::find($id);
-        if (!$permission) {
-            return response()->json(['message' => 'Role not found'], 404);
-        }
-
-        // Get JSON from storage
-        $filePath = '/system/roles/' . Str::slug($permission->name) . '_permissions.json';
-
-        if (!Storage::exists($filePath)) {
-            return response()->json(['message' => 'Role ' . $permission->name . ' permissions file not found'], 404);
-        }
-
-        $jsonContent = file_get_contents(Storage::path($filePath));
-
-        return response()->json(['role' => $permission, 'data' => json_decode($jsonContent)]);
+        return response(['results' => $permissions]);
     }
 
     /**

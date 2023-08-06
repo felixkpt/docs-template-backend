@@ -38,7 +38,7 @@ class UsersTableSeeder extends Seeder
             $this->seedBatch($start, $end);
 
             // "Behold, the 'Sleepy Seeder' granting the server some shut-eye between batches, dreaming of data wonders! 😴💤"
-            sleep(10);
+            sleep(60);
         }
     }
 
@@ -146,6 +146,9 @@ class UsersTableSeeder extends Seeder
                     Log::critical('Roles/role notfound::', ['message' => $e->getMessage()]);
                 }
             }
+
+            sleep(5);
+
         }
     }
 

@@ -34,7 +34,7 @@ class PostController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Posts retrieved successfully',
-            'data' => $posts,
+            'results' => $posts,
         ], 200);
     }
 
@@ -59,7 +59,7 @@ class PostController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Post created successfully',
-            'data' => [
+            'results' => [
                 'id' => 3,
                 'title' => $request->input('title'),
                 'content' => $request->input('content'),
@@ -86,7 +86,7 @@ class PostController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Post retrieved successfully',
-            'data' => $post,
+            'results' => $post,
         ], 200);
     }
 
@@ -111,7 +111,7 @@ class PostController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Post updated successfully',
-            'data' => [
+            'results' => [
                 'id' => $id,
                 'title' => $request->input('title'),
                 'content' => $request->input('content'),

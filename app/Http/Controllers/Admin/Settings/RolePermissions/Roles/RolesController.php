@@ -9,6 +9,7 @@ use Spatie\Permission\Models\Role;
 use App\Repositories\SearchRepo;
 use App\Services\NestedRoutes\GetNestedRoutes;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Models\Permission;
 
@@ -22,6 +23,7 @@ class RolesController extends Controller
 
     public function index()
     {
+
         $roles = Role::query();
 
         $roles = SearchRepo::of($roles, ['name'], ['name', 'id'], ['name', 'guard_name'])
@@ -40,7 +42,7 @@ class RolesController extends Controller
         ';
             })->paginate();
 
-        return response(['data' => $roles]);
+        return response(['results' => $roles]);
     }
 
     public function store(Request $request)
@@ -70,7 +72,7 @@ class RolesController extends Controller
             $action = 'updated';
 
         $res = Role::updateOrCreate(['id' => $request->id], $data);
-        return response(['type' => 'success', 'message' => 'Role ' . $action . ' successfully', 'data' => $res]);
+        return response(['type' => 'success', 'message' => 'Role ' . $action . ' successfully', 'results' => $res]);
     }
 
     function update(Request $request, $id)
@@ -84,62 +86,151 @@ class RolesController extends Controller
         $role = Role::findOrFail($id);
         return response()->json([
             'status' => true,
-            'data' => $role,
+            'results' => $role,
         ]);
     }
 
     function storePermissions(Request $request, $id)
     {
 
-        $role = Role::find($id);
+        $current_folder = $request->current_folder;
+        $all_folders = $request->all_folders;
+
+        $role = Role::with(['permissions' => function ($q) use($current_folder) {
+            $q->where('uri', 'not like', $current_folder[0]['folder'].'%');
+        }])->find($id);
+
         if (!$role) return response(['message' => 'Role not found', 'status' => false,], 404);
 
-        $validator = Validator::make(
-            $request->all(),
-            [
-                'permissions' => 'required|array',
-            ]
-        );
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'validation error',
-                'errors' => $validator->errors()
-            ], 401);
+        $guard_name = $role->guard_name;
+        $permissions = [];
+        foreach ($current_folder as $nestedRoute) {
+            $permissions = array_merge($permissions, $this->extractAndSavePermissions($nestedRoute, $permissions, $guard_name));
         }
 
-        $permissions = $request->permissions ?? [];
-
-        $databasePermissions = [];
-        $jsonPermissions = [];
-        foreach ($permissions as $permission) {
-            $parts = explode(',', $permission);
-
-            $uri = $parts[0];
-            $title = Str::slug($parts[1], '_');
-            $slug = Str::slug(Str::replace('/', ' ', Str::before($uri, '@')), '.');
-            if (!Str::endsWith($slug, $title)) $slug .= '.' . $title;
-
-            $databasePermissions[] = Permission::updateOrCreate(['name' => $slug], ['name' => $slug, 'uri' => $uri, 'guard_name' => 'api', 'user_id' => auth()->id() ?? 1]);
-            $jsonPermissions[] = $uri;
-        }
+        $existing = Role::find($role->id)->getAllPermissions()->pluck('id');
+       
+        $existing = $role->permissions->pluck('id');
 
         // Sync role with permissions
-        $role->syncPermissions($databasePermissions);
+        $role->syncPermissions([...$existing,...$permissions]);
 
-        // generate role json
-        $this->generateJson($role, $jsonPermissions, $request);
+        $this->saveJson($role, $all_folders);
 
         return response([
             'status' => 'success',
             'message' => 'Persssions saved!',
-            'data' => Permission::whereNotNull('uri')->get()
+            'results' => []
         ]);
+    }
+
+    function extractAndSavePermissions($nestedRoute, $permissions, $guard_name)
+    {
+
+        $folder = $nestedRoute['folder'];
+        $title = $nestedRoute['title'];
+        $icon = $nestedRoute['icon'];
+        $hidden = $nestedRoute['hidden'];
+        $children = $nestedRoute['children'];
+        $routes = $nestedRoute['routes'];
+
+        $uri = $folder;
+        $slug = Str::slug(Str::replace('/', ' ', $uri), '.');
+
+        $permissions[] = Permission::updateOrCreate(
+            ['name' => $slug],
+            [
+                'name' => $slug,
+                'uri' => $uri,
+                'title' => $title,
+                'icon' => $icon,
+                'hidden' => $hidden,
+                'guard_name' => $guard_name,
+                'user_id' => auth()->id() ?? 1
+            ]
+        )->id ?? 0;
+
+        if (count($routes) > 0) {
+            $permissions = array_merge($permissions, $this->saveRoutesASPermissions($routes, $guard_name));
+        }
+
+        if (count($children) > 0) {
+
+            foreach ($children as $nestedRoute) {
+                $permissions = array_merge($permissions, $this->extractAndSavePermissions($nestedRoute, $permissions, $guard_name));
+            }
+        }
+
+        return $permissions;
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function getRolePermissions(string $id)
+    {
+        // a user can have more than 1 roles
+        $permissions = Role::find($id);
+        if (!$permissions) {
+            return response()->json(['message' => 'Role not found'], 404);
+        }
+
+        // Get JSON from storage
+        $filePath = '/system/roles/' . Str::slug($permissions->name) . '_menu.json';
+
+        if (!Storage::exists($filePath)) {
+            return response()->json(['message' => 'Role ' . $permissions->name . ' permissions file not found'], 404);
+        }
+
+        $jsonContent = file_get_contents(Storage::path($filePath));
+
+        return response()->json(['results' => ['roles' => $permissions, 'menu' => json_decode($jsonContent)]]);
+    }
+
+    function saveRoutesASPermissions($routes, $guard_name)
+    {
+        $permissions = [];
+        foreach ($routes as $route) {
+
+
+            $uri = $route['uri'];
+            $title = $route['title'];
+            $icon = $route['icon'];
+            $slug = Str::slug(Str::replace('/', ' ', $uri), '.');
+
+            $permissions[] = Permission::updateOrCreate(
+                ['name' => $slug],
+                [
+                    'name' => $slug,
+                    'uri' => $uri,
+                    'title' => $title,
+                    'icon' => $icon,
+                    'guard_name' => $guard_name,
+                    'user_id' => auth()->id() ?? 1
+                ]
+            )->id ?? 0;
+        }
+
+        return $permissions;
+    }
+
+    function saveJson($role, $json)
+    {
+
+        $filePath = storage_path('/app/system/roles/' . Str::slug($role->name) . '_menu.json');
+        $jsonString = json_encode($json, JSON_PRETTY_PRINT);
+
+        // Create the directory if it does not exist
+        $filesystem = new Filesystem();
+        $filesystem->makeDirectory(dirname($filePath), 0755, true, true);
+
+        // Save the JSON data to the file
+        $filesystem->put($filePath, $jsonString);
     }
 
     function generateJson($role = null, $permissions = null, $request = null)
     {
+        return $this->storePermissions(request(), 54);
 
         $this->permissions = $permissions;
         $this->folder_icons = $request->folder_icons;

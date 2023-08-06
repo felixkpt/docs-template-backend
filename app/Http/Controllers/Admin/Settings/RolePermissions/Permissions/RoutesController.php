@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Services\NestedRoutes\GetNestedRoutes;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class RoutesController extends Controller
 {
@@ -17,7 +18,17 @@ class RoutesController extends Controller
         $gen = new GetNestedRoutes($prefix, '');
         $nestedRoutes = $gen->list($prefix);
 
-        return response(['data' => $nestedRoutes]);
+
+        // $role = Role::find(1);
+
+        // $existing = Role::with(['permissions' => function ($q) {
+        //     $q->where('name', 'not like', 'admin%');
+        // }])->find($role->id);
+
+        // dd($existing->permissions->pluck('id'));
+
+
+        return response(['results' => $nestedRoutes]);
     }
 
     function store()
@@ -33,7 +44,7 @@ class RoutesController extends Controller
         return response([
             'status' => 'success',
             'message' => 'Persssions saved!',
-            'data' => Permission::whereNotNull('uri')->get()
+            'results' => Permission::whereNotNull('uri')->get()
         ]);
     }
 }

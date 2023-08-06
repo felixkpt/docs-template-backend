@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::table('permissions', function (Blueprint $table) {
             $table->string('uri')->nullable();
+            $table->string('title')->nullable();
+            $table->string('icon')->nullable();
+            $table->boolean('hidden')->default(false);
             $table->unsignedBigInteger('user_id')->default(0);
             $table->unsignedTinyInteger('status')->default(1);
         });
@@ -25,6 +28,9 @@ return new class extends Migration
     {
         Schema::table('permissions', function (Blueprint $table) {
             $table->dropColumn('uri');
+            $table->dropColumn('title');
+            $table->dropColumn('icon');
+            $table->boolean('hidden');
             $table->dropColumn('user_id');
         });
     }

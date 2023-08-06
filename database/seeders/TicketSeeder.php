@@ -44,7 +44,7 @@ class TicketSeeder extends Seeder
             $this->seedBatch($start, $end);
 
             // "Behold, the 'Sleepy Seeder' granting the server some shut-eye between batches, dreaming of data wonders! 😴💤"
-            sleep(10);
+            sleep(60);
         }
     }
 
@@ -63,6 +63,8 @@ class TicketSeeder extends Seeder
         $now = Carbon::now();
 
         for ($i = $start; $i <= $end; $i++) {
+
+            echo "$i. Creating ticket...\n";
 
             $randomValue = rand(0, 5);
             $reopened = $randomValue === 5 ? 1 : 0;
@@ -114,6 +116,8 @@ class TicketSeeder extends Seeder
                 'updated_at' => Carbon::now(),
             ]);
 
+            echo "Ticket: $ticket->id\n";
+
             // Generate a random attachment for 30% of the tickets (you can adjust this percentage as needed)
             if (rand(1, 100) <= 30) {
                 $this->saveTicketAttachments($ticket);
@@ -139,6 +143,9 @@ class TicketSeeder extends Seeder
                 ],
                 null,
             );
+
+            sleep(5);
+
         }
     }
 

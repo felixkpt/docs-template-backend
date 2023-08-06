@@ -31,7 +31,7 @@ Route::middleware(array_filter(array_merge($middleWares, [])))
         $routes_path = base_path('routes/' . $nested_routes_folder);
 
         if (file_exists($routes_path)) {
-            $route_files = collect(File::allFiles($routes_path))->filter(fn ($file) => !Str::is($file->getFileName(), 'driver.php'));
+            $route_files = collect(File::allFiles($routes_path))->filter(fn ($file) => !Str::is($file->getFileName(), 'driver.php') && Str::endsWith($file->getFileName(), '.route.php'));
 
             foreach ($route_files as $file) {
 
@@ -40,7 +40,7 @@ Route::middleware(array_filter(array_merge($middleWares, [])))
                 $prefix = $res['prefix'];
                 $file_path = $res['file_path'];
 
-                Route::group(['prefix' => $prefix], function () use ($file_path) {
+                Route::prefix($prefix)->group(function () use ($file_path) {
                     require $file_path;
                 });
             }

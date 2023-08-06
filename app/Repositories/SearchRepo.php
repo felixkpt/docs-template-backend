@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
  * The SearchRepo class provides functionality for searching and sorting data using Laravel's Eloquent ORM or Query Builder.
  *
  * Author: Felix (https://github.com/felixkpt)
+ * Credits:Ian Kibet
  * Creation Date: July 1, 2023
  * License: MIT
  */
@@ -24,7 +25,6 @@ class SearchRepo
     protected $sortable = [];
     protected $model_name = '';
     protected $fillable = [];
-
 
     /**
      * Create a new instance of SearchRepo.
@@ -98,7 +98,7 @@ class SearchRepo
                 $orderDirection = request()->orderDirection ?? 'asc';
                 $builder->orderBy($orderBy, $orderDirection);
             }
-        } else $builder->orderBy($model_table.'.created_at', 'desc');
+        } else $builder->orderBy($model_table . '.created_at', 'desc');
 
         return $self;
     }
@@ -167,7 +167,7 @@ class SearchRepo
      */
     function get($columns = ['*'])
     {
-        $results = ['data' => $this->builder->get($columns)];
+        $results = ['results' => $this->builder->get($columns)];
         $custom = collect($this->getCustoms());
 
         $results = $custom->merge($results);
@@ -183,7 +183,7 @@ class SearchRepo
      */
     function first($columns = ['*'])
     {
-        $results = ['data' => $this->builder->first($columns)];
+        $results = ['results' => $this->builder->first($columns)];
         $custom = collect($this->getCustoms());
 
         $results = $custom->merge($results);
@@ -228,6 +228,7 @@ class SearchRepo
             'text' => ['input' => 'input', 'type' => 'url'],
 
             '*_id'  => ['input' => 'select', 'type' => null],
+            'guard_nameeeeee' => ['input' => 'select', 'type' => null],
 
             'img' => ['input' => 'input', 'type' => 'file'],
             'image' => ['input' => 'input', 'type' => 'file'],

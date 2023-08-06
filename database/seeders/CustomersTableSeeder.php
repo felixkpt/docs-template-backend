@@ -20,7 +20,7 @@ class CustomersTableSeeder extends Seeder
         $totalRecords = 55000;
         $batchSize = 100; // Set the desired batch size
 
-        if (Customer::count() >= $batchSize) return;
+        if (Customer::count() >= $totalRecords) return;
 
         $totalBatches = ceil($totalRecords / $batchSize);
 
@@ -31,7 +31,7 @@ class CustomersTableSeeder extends Seeder
             $this->seedBatch($start, $end);
 
             // "Behold, the 'Sleepy Seeder' granting the server some shut-eye between batches, dreaming of data wonders! 😴💤"
-            sleep(10);
+            sleep(60);
         }
     }
 
@@ -88,6 +88,9 @@ class CustomersTableSeeder extends Seeder
                 'updated_at' => Carbon::now(),
 
             ]);
+
+            sleep(5);
+
         }
     }
 }

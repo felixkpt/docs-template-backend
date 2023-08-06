@@ -2,6 +2,7 @@
 
 namespace App\Services\NestedRoutes\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
@@ -10,23 +11,23 @@ use Illuminate\Support\Facades\App;
 
 class NestedRoutesAuth
 {
-    
-  protected $router;
 
-  protected $path;
-  protected $user;
-  protected $menus;
-  protected $allow = false;
-  protected $request;
-  protected $is_app = 0;
-  protected $common;
-  protected $userPermissions;
-  protected $allPermissionsFile;
+    protected $router;
 
-  protected $allowedPermissions;
-  protected $role;
-  protected $urls = [];
-  protected $loopLevel = 0;
+    protected $path;
+    protected $user;
+    protected $menus;
+    protected $allow = false;
+    protected $request;
+    protected $is_app = 0;
+    protected $common;
+    protected $userPermissions;
+    protected $allPermissionsFile;
+
+    protected $allowedPermissions;
+    protected $role;
+    protected $urls = [];
+    protected $loopLevel = 0;
 
     public function __construct(Router $router)
     {
@@ -46,8 +47,10 @@ class NestedRoutesAuth
         if ($request) {
             $this->request = $request;
             $this->user = auth()->user();
+
             // For testing purposes only enable the below user if you are accessing directly from the browser
             // $this->user = User::first();
+
             $this->path = Route::getFacadeRoot()->current()->uri();
         }
 
@@ -87,6 +90,7 @@ class NestedRoutesAuth
      */
     protected function authorize($current)
     {
+
         // Define routes that are allowed without specific permissions...
         $allowed_urls = [];
         $allowed_urls[] = '/';
@@ -104,8 +108,14 @@ class NestedRoutesAuth
         // Direct permissions
         // $permissions = $user->getDirectPermissions(); // Or $user->permissions;
 
+        if ($user->email == 'admin@example.com') {
+            return true;
+        }
+
         // Permissions inherited from the user's roles
         $permissions = $user->getPermissionsViaRoles()->pluck('uri');
+
+        // dd($user->email, $user->getRoleNames(),$permissions);
 
         // All permissions which apply to the user (inherited and direct)
         // $user->getAllPermissions();
@@ -119,6 +129,7 @@ class NestedRoutesAuth
             // Split the URI into route and methods...
             $res = preg_split('#@#', $uri, 2);
             $curr_route = Str::startsWith($res[0], 'admin') ? $res[0] : 'admin/' . $res[0];
+
             $methods = array_filter(explode('@', str_replace('|', '', $res[1] ?? '')));
 
             // For testing purposes, allow all methods to access the route...

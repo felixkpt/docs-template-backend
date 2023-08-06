@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,9 +17,12 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-            sleep(1 * 2);
+    sleep(1 * 2);
+    $user = $request->user();
+    $roles = $user->getRoleNames();
+    $user->roles = $roles;
 
-    return ['data' => $request->user()];
+    return ['results' => $user];
 });
 
 Route::post('login', [AuthController::class, 'login']);

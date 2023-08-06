@@ -23,7 +23,7 @@ class DocumentationSeeder extends Seeder
     {
 
         // Set the total number you want to seed
-        $totalRecords = 10100;
+        $totalRecords = 22100;
         $batchSize = 1000; // Set the desired batch size
 
         if (Documentation::count() >= $totalRecords) return;
@@ -37,7 +37,7 @@ class DocumentationSeeder extends Seeder
             $this->seedBatch($start, $end);
 
             // A moment of rest for the seeder before proceeding to the next batch 😴💤
-            sleep(10);
+            sleep(60);
         }
     }
 
@@ -53,6 +53,9 @@ class DocumentationSeeder extends Seeder
         $faker = Faker::create();
 
         for ($i = $start; $i <= $end; $i++) {
+
+            echo "$i. Creating documentation...\n";
+
             $title = $faker->sentence();
             $slug = Str::slug($title);
             $paragraphs = $faker->paragraphs(rand(3, 10)); // Generates 3 to 10 paragraphs
@@ -96,6 +99,9 @@ class DocumentationSeeder extends Seeder
                 'updated_at' => Carbon::now(),
             ]);
 
+            echo "Documentation: $documentation->id\n";
+
+
             // Generate attachments (files) for 30% of the documentation (you can adjust this percentage as needed)
             if (rand(1, 100) <= 30) {
                 $this->saveDocumentationFiles($documentation);
@@ -105,6 +111,8 @@ class DocumentationSeeder extends Seeder
 
                 $this->saveImage($documentation);
             }
+
+            sleep(5);
         }
     }
 

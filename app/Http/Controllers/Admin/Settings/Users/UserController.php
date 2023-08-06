@@ -30,14 +30,14 @@ class UserController extends Controller
     ';
             })->paginate();
 
-        return response(['data' => $users, 'status' => true, 'message' => 'Users list']);
+        return response(['results' => $users, 'status' => true, 'message' => 'Users list']);
     }
 
     public function create()
     {
         $roles = Role::all();
 
-        return response(['status' => true, 'data' => ['user' => null, 'roles' => $roles]]);
+        return response(['status' => true, 'results' => ['user' => null, 'roles' => $roles]]);
     }
 
     public function store(Request $request)
@@ -70,7 +70,7 @@ class UserController extends Controller
         $user = User::with('roles')->findOrFail($id);
         $roles = Role::all();
 
-        return response(['status' => true, 'data' => ['user' => $user, 'roles' => $roles]]);
+        return response(['status' => true, 'results' => ['user' => $user, 'roles' => $roles]]);
     }
 
     public function update(Request $request, User $user)

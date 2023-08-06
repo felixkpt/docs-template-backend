@@ -16,78 +16,118 @@ class RoutesHelper
      */
     public static function getRoutes($nested_routes_folder, $leftTrim)
     {
-        $nestedRoutes = [];
 
         $routes_path = base_path('routes/' . $nested_routes_folder);
 
         if (file_exists($routes_path)) {
-            // Filter out the driver.php files and process each route file
-            $route_files = collect(File::allFiles($routes_path))->filter(fn ($file) => !Str::is($file->getFileName(), 'driver.php'));
 
-            foreach ($route_files as $file) {
+            $folder = $routes_path;
+            $routes = self::getRoutesReal($folder, $nested_routes_folder, $routes_path, $leftTrim);
+            $item = [
+                'folder' => self::getFolderAfterNested($folder, $nested_routes_folder),
+                'children' => [],
+                'routes' => $routes,
+            ];
 
-                // Handle the route file and extract relevant information
-                $res = self::handle($file, $nested_routes_folder, $routes_path, $leftTrim);
+            $items = self::iterateFolders($folder, $nested_routes_folder, $routes_path, $leftTrim);
+            array_unshift($items, $item);
 
-                $prefix = $res['prefix'];
-                $file_path = $res['file_path'];
-                $folder_after_nested = $res['folder_after_nested'];
-
-                // Get the existing routes before adding new ones
-                $existingRoutes = collect(Route::getRoutes())->pluck('uri');
-
-                Route::group(['prefix' => $prefix], function () use ($file_path, $existingRoutes, $folder_after_nested, &$nestedRoutes, $routes_path) {
-
-                    require $file_path;
-
-                    // Get the newly added routes and their corresponding folders
-                    $routes = collect(Route::getRoutes())->filter(function ($route) use ($existingRoutes) {
-                        return !in_array($route->uri, $existingRoutes->toArray());
-                    })->map(function ($route) use ($folder_after_nested) {
-                        $uri = $route->uri;
-
-                        $methods = '@' . implode('|@', $route->methods());
-                        $uri_methods = $uri . $methods;
-
-                        $slug = Str::slug(Str::replace('/', '.', $uri), '.');
-
-                        $parts = explode('/', $uri);
-                        $name = end($parts);
-
-                        if (isset($route->action['controller'])) {
-                            $c = explode('@', $route->action['controller']);
-                            if (count($c) === 2) {
-                                $name = $c[1];
-                            }
-                        }
-
-                        if ($route->getName()) {
-                            $parts = explode('.', $route->getName());
-                            $name = end($parts);
-                        }
-
-                        $name = Str::title($name);
-
-                        return [
-                            'uri' => $uri,
-                            'methods' => $methods,
-                            'uri_methods' => $uri_methods,
-                            'slug' => $slug,
-                            'title' => $name,
-                            'folder' => $folder_after_nested,
-                            'hidden' => $route->hiddenRoute(),
-                            'icon' => $route->getIcon()
-                        ];
-                    });
-
-                    $nestedRoutes = array_merge($nestedRoutes, $routes->toArray());
-                });
-            }
+            return $items;
         }
 
-        return $nestedRoutes;
+        return null;
     }
 
+    private static function iterateFolders($folder, $nested_routes_folder, $routes_path, $leftTrim)
+    {
+
+        $items = [];
+        $folders = File::directories($folder);
+
+        foreach ($folders as $folder) {
+
+            $routes = self::getRoutesReal($folder, $nested_routes_folder, $routes_path, $leftTrim);
+            $item = [
+                'folder' => self::getFolderAfterNested($folder, $nested_routes_folder),
+                'children' => self::iterateFolders($folder, $nested_routes_folder, $routes_path, $leftTrim),
+                'routes' => $routes,
+            ];
+
+            $items[] = $item;
+        }
+
+        return $items;
+    }
+
+
+    static function getRoutesReal($folder, $nested_routes_folder, $routes_path, $leftTrim)
+    {
+        $items = [];
+        // Filter out the driver.php files and process each route file
+        $route_files = collect(File::files($folder))->filter(fn ($file) => !Str::is($file->getFileName(), 'driver.php') && Str::endsWith($file->getFileName(), '.route.php'));
+
+        foreach ($route_files as $file) {
+
+            // Handle the route file and extract relevant information
+            $res = self::handle($file, $nested_routes_folder, $routes_path, $leftTrim);
+
+            $prefix = $res['prefix'];
+            $file_path = $res['file_path'];
+            $folder_after_nested = $res['folder_after_nested'];
+
+            // Get the existing routes before adding new ones
+            $existingRoutes = collect(Route::getRoutes())->pluck('uri');
+
+            Route::group(['prefix' => $prefix], function () use ($file_path, $existingRoutes, $folder_after_nested, &$items, $routes_path) {
+
+                require $file_path;
+
+                // Get the newly added routes and their corresponding folders
+                $routes = collect(Route::getRoutes())->filter(function ($route) use ($existingRoutes) {
+                    return !in_array($route->uri, $existingRoutes->toArray());
+                })->map(function ($route) use ($folder_after_nested) {
+                    $uri = $route->uri;
+
+                    $methods = '@' . implode('|@', $route->methods());
+                    $uri_methods = $uri . $methods;
+
+                    $slug = Str::slug(Str::replace('/', '.', $uri), '.');
+
+                    $parts = explode('/', $uri);
+                    $title = end($parts);
+
+                    if (isset($route->action['controller'])) {
+                        $c = explode('@', $route->action['controller']);
+                        if (count($c) === 2) {
+                            $title = $c[1];
+                        }
+                    }
+
+                    if ($route->getName()) {
+                        $parts = explode('.', $route->getName());
+                        $title = end($parts);
+                    }
+
+                    $title = Str::title($title);
+
+                    return [
+                        'uri' => $uri,
+                        'methods' => $methods,
+                        'uri_methods' => $uri_methods,
+                        'slug' => $slug,
+                        'title' => $title,
+                        'folder' => $folder_after_nested,
+                        'hidden' => $route->hiddenRoute(),
+                        'icon' => $route->getIcon()
+                    ];
+                });
+
+                $items = array_merge($items, $routes->toArray());
+            });
+        }
+
+        return $items;
+    }
     /**
      * Handle the processing of a route file and extract relevant information.
      *
@@ -101,14 +141,35 @@ class RoutesHelper
     {
         $path = $file->getPath();
 
+        $get_folder_after = true;
+
         $folder_after_nested = null;
         if ($get_folder_after)
             $folder_after_nested = self::getFolderAfterNested($path, $nested_routes_folder);
 
         $file_name = $file->getFileName();
+        $prefix = $file_name;
+
+        $prefix = self::getPrefix($folder_after_nested, $file_name, $routes_path, $path);
+
+        $file_path = $file->getPathName();
+        $res = [
+            'prefix' => $prefix,
+            'file_path' => $file_path,
+            'folder_after_nested' => $folder_after_nested,
+        ];
+
+        // if ($get_folder_after)
+        //     dump($res);
+
+        return $res;
+    }
+
+    static function getPrefix($folder_after_nested, $file_name, $routes_path, $path)
+    {
+
         $prefix = str_replace($file_name, '', $path);
         $prefix = str_replace($routes_path, '', $prefix);
-        $file_path = $file->getPathName();
         $arr = explode('/', $prefix);
         $len = count($arr);
         $main_file = $arr[$len - 1];
@@ -123,16 +184,7 @@ class RoutesHelper
             $ext_route = '/' . $ext_route;
         $prefix = strtolower($prefix . $ext_route);
 
-        $res = [
-            'prefix' => $prefix ?: '/' . $folder_after_nested,
-            'file_path' => $file_path,
-            'folder_after_nested' => $folder_after_nested,
-        ];
-
-        // if ($get_folder_after)
-        //     dump($res);
-
-        return $res;
+        return $prefix;
     }
 
     /**
