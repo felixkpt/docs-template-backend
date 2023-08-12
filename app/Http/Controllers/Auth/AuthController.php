@@ -114,6 +114,20 @@ class AuthController extends Controller
         }
     }
 
+    public function abilities()
+    {
+        $abilities = request()->abilities ?? [];
+
+        $user = auth()->user();
+        $results = [];
+        
+        foreach ($abilities as $ability) {
+            $results[$ability] = $user->can($ability);
+        }
+
+        return response(['results' => $results]);
+    }
+
     /**
      * Logout the User
      * @param Request $request

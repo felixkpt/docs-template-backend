@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin\Tickets;
 
 use App\Http\Controllers\Controller;
+use App\Models\Ticket;
+use App\Repositories\SearchRepo;
 use Illuminate\Http\Request;
 
 class TicketsController extends Controller
@@ -12,7 +14,26 @@ class TicketsController extends Controller
      */
     public function index()
     {
-        //
+        $documentation = Ticket::query();
+
+        $res = SearchRepo::of($documentation, ['subject', 'user_id'], ['id', 'subject', 'status', 'user_id'], ['subject', 'status', 'assigned_to_list'])
+            ->addColumn('action', function ($item) {
+                return '
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="icon icon-list2 font-20"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item navigate" href="/admin/documentation/' . $item->slug . '">View</a></li>
+                            <li><a class="dropdown-item prepare-edit" data-id="' . $item->id . '" href="/admin/documentation/' . $item->id . '">Edit</a></li>
+                            <li><a class="dropdown-item prepare-status-update" data-id="' . $item->id . '" href="/admin/documentation/' . $item->id . '/status-update">' . ($item->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+                        </ul>
+                    </div>
+                    ';
+            })
+            ->paginate();
+
+        return response(['results' => $res]);
     }
 
     /**

@@ -67,7 +67,7 @@ class NestedRoutesAuth
     public function check()
     {
         // Dummy implementation, change as per your requirements...
-        return true;
+        // return true;
         // $this->user = null;
 
         $current = request()->getPathInfo();

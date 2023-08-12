@@ -7,13 +7,20 @@ use App\Models\User;
 use App\Repositories\SearchRepo;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Permission;
 
-class UserController extends Controller
+class UsersController extends Controller
 {
     public function index()
     {
         $users = User::with('roles');
+        if (request()->all)
+            return response(['results' => $users->limit(100)->get()]);
+
         $users = SearchRepo::of($users, ['name', 'id'])
+            ->addColumn('Roles', function ($user) {
+                return implode(', ', $user->roles()->get()->pluck('name')->toArray());
+            })
             ->addColumn('action', function ($user) {
                 return '
     <div class="dropdown">
@@ -35,9 +42,8 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles = Role::all();
 
-        return response(['status' => true, 'results' => ['user' => null, 'roles' => $roles]]);
+        return response(['status' => true, 'results' => null]);
     }
 
     public function store(Request $request)
@@ -46,7 +52,8 @@ class UserController extends Controller
             'name' => 'required',
             'email' => 'required|unique:users,email',
             'password' => 'required|min:8',
-            'roles' => 'nullable|array',
+            'roles' => 'required|array',
+            'permissions' => 'nullable|array',
         ]);
 
         $user = User::create([
@@ -61,6 +68,12 @@ class UserController extends Controller
                 $user->syncRoles([$r->name]);
         }
 
+        if ($request->permissions) {
+            $permissions = Permission::whereIn('id', $request->input('role_id'))->get();
+            foreach ($roles as $r)
+                $user->syncRoles([$r->name]);
+        }
+
         return redirect()->route('users.index')
             ->with('success', 'User created successfully.');
     }
@@ -68,13 +81,15 @@ class UserController extends Controller
     public function edit($id)
     {
         $user = User::with('roles')->findOrFail($id);
-        $roles = Role::all();
 
-        return response(['status' => true, 'results' => ['user' => $user, 'roles' => $roles]]);
+        return response(['status' => true, 'results' => $user]);
     }
 
     public function update(Request $request, User $user)
     {
+
+        $request->merge(['roles' => json_decode(request()->roles)]);
+
         $request->validate([
             'name' => 'required',
             'email' => 'required|unique:users,email,' . $user->id,
@@ -89,9 +104,9 @@ class UserController extends Controller
         ]);
 
         if ($request->roles) {
+
             $roles = Role::whereIn('id', $request->input('roles'))->get();
-            foreach ($roles as $r)
-                $user->assignRole($r);
+            $user->syncRoles($roles);
         }
 
         // Additional logic if needed

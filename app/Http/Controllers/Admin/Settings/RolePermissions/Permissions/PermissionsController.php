@@ -17,7 +17,10 @@ class PermissionsController extends Controller
     public function index()
     {
 
-        $permissions = ModelsPermission::whereNull('uri');
+        $permissions = Permission::whereNull('uri');
+
+        if (request()->all == '1')
+            return response(['results' => $permissions->get()]);
 
         $permissions = SearchRepo::of($permissions, ['name'], ['name', 'id'], ['name', 'guard_name'])
             ->addColumn('action', function ($permission) {

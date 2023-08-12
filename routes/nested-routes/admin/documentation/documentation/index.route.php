@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\Documentations\Documentation\DocumentationController;
+use App\Http\Controllers\Admin\documentation\Documentation\DocumentationController;
 use Illuminate\Support\Facades\Route;
 
 $controller = DocumentationController::class;

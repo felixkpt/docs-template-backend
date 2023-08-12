@@ -1,12 +1,9 @@
 <?php
-// routes/users/users.php
 
-use App\Http\Controllers\Admin\Settings\Users\UserController;
+use App\Http\Controllers\Admin\Settings\Users\UsersController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [UserController::class, 'index'])->name('users.index')->icon('mdi:leads');
-Route::get('/create', [UserController::class, 'create'])->name('users.create')->icon('prime:bookmark')->hidden(true);
-Route::post('/', [UserController::class, 'store'])->name('users.store')->icon('c');
-Route::get('/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->icon('d');
-Route::put('/{user}', [UserController::class, 'update'])->name('users.update')->icon('e');
-Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy')->icon('f');
+$controller = UsersController::class;
+Route::get('/', [$controller, 'index'])->name('users.index')->icon('mdi:leads');
+Route::get('/create', [$controller, 'create'])->name('users.create')->icon('prime:bookmark')->hidden(true);
+Route::post('/', [$controller, 'store'])->name('users.store')->icon('c');

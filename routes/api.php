@@ -16,20 +16,18 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    sleep(1 * 2);
-    $user = $request->user();
-    $roles = $user->getRoleNames();
-    $user->roles = $roles;
-
-    return ['results' => $user];
-});
-
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
 
-Route::group(['middleware' => 'api'], function () {
+Route::middleware(['auth:sanctum'])->group(function () {
+
+    Route::get('/user', function (Request $request) {
+        $user = $request->user();
+        $roles = $user->getRoleNames();
+        $user->roles = $roles;
+        return ['results' => $user];
+    });
+
     Route::post('logout', [AuthController::class, 'logout']);
-    Route::post('refresh', [AuthController::class, 'refresh']);
-    Route::post('me', [AuthController::class, 'me']);
+    Route::post('abilities', [AuthController::class, 'abilities']);
 });

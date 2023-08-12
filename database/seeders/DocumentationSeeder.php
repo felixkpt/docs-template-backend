@@ -23,8 +23,8 @@ class DocumentationSeeder extends Seeder
     {
 
         // Set the total number you want to seed
-        $totalRecords = 22100;
-        $batchSize = 1000; // Set the desired batch size
+        $totalRecords = 512100;
+        $batchSize = 500; // Set the desired batch size
 
         if (Documentation::count() >= $totalRecords) return;
 
@@ -112,7 +112,7 @@ class DocumentationSeeder extends Seeder
                 $this->saveImage($documentation);
             }
 
-            sleep(5);
+            sleep(3);
         }
     }
 

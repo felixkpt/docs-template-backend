@@ -98,8 +98,9 @@ class TicketSeeder extends Seeder
                 'follow_up_reminder' => 0,
                 'breached' => 0,
                 'from_mail_scanner' => 0,
-                'mail_direction' => null,
-                'subject' => null,
+                // 70% inbound
+                'mail_direction' => rand(0, 10) <= 7 ? 1 : 0,
+                'subject' => Arr::random([$faker->sentence(), $faker->word(), null]),
                 'is_spam' => 0,
                 'is_historic' => 0,
                 'ticket_source' => 1,
@@ -145,7 +146,6 @@ class TicketSeeder extends Seeder
             );
 
             sleep(5);
-
         }
     }
 

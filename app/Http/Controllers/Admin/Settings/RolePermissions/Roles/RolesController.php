@@ -26,6 +26,9 @@ class RolesController extends Controller
 
         $roles = Role::query();
 
+        if (request()->all == '1')
+            return response(['results' => $roles->get()]);
+
         $roles = SearchRepo::of($roles, ['name'], ['name', 'id'], ['name', 'guard_name'])
             ->addColumn('action', function ($role) {
                 return '
@@ -35,7 +38,7 @@ class RolesController extends Controller
             </button>
             <ul class="dropdown-menu">
                 <li><a class="dropdown-item navigate" href="/admin/settings/role-permissions/roles/' . $role->id . '">View</a></li>
-                <li><a class="dropdown-item prepare-edit" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/' . $role->id . '">Edit</a></li>
+                <li><a class="dropdown-item prepare-edit" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/' . $role->id . '/edit">Edit</a></li>
                 <li><a class="dropdown-item prepare-status-update" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/' . $role->id . '/status-update">' . ($role->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
             </ul>
         </div>
@@ -96,8 +99,8 @@ class RolesController extends Controller
         $current_folder = $request->current_folder;
         $all_folders = $request->all_folders;
 
-        $role = Role::with(['permissions' => function ($q) use($current_folder) {
-            $q->where('uri', 'not like', $current_folder[0]['folder'].'%');
+        $role = Role::with(['permissions' => function ($q) use ($current_folder) {
+            $q->where('uri', 'not like', $current_folder[0]['folder'] . '%');
         }])->find($id);
 
         if (!$role) return response(['message' => 'Role not found', 'status' => false,], 404);
@@ -109,11 +112,11 @@ class RolesController extends Controller
         }
 
         $existing = Role::find($role->id)->getAllPermissions()->pluck('id');
-       
+
         $existing = $role->permissions->pluck('id');
 
         // Sync role with permissions
-        $role->syncPermissions([...$existing,...$permissions]);
+        $role->syncPermissions([...$existing, ...$permissions]);
 
         $this->saveJson($role, $all_folders);
 

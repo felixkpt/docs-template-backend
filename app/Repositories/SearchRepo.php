@@ -167,7 +167,7 @@ class SearchRepo
      */
     function get($columns = ['*'])
     {
-        $results = ['results' => $this->builder->get($columns)];
+        $results = ['data' => $this->builder->get($columns)];
         $custom = collect($this->getCustoms());
 
         $results = $custom->merge($results);
@@ -183,7 +183,7 @@ class SearchRepo
      */
     function first($columns = ['*'])
     {
-        $results = ['results' => $this->builder->first($columns)];
+        $results = ['data' => $this->builder->first($columns)];
         $custom = collect($this->getCustoms());
 
         $results = $custom->merge($results);
@@ -228,13 +228,17 @@ class SearchRepo
             'text' => ['input' => 'input', 'type' => 'url'],
 
             '*_id'  => ['input' => 'select', 'type' => null],
-            'guard_nameeeeee' => ['input' => 'select', 'type' => null],
+            '*_ids'  => ['input' => 'multiselect', 'type' => null],
+            '*_list'  => ['input' => 'select', 'type' => null],
+            '*_multilist'  => ['input' => 'multiselect', 'type' => null],
+            'guard_name' => ['input' => 'select', 'type' => null],
 
             'img' => ['input' => 'input', 'type' => 'file'],
             'image' => ['input' => 'input', 'type' => 'file'],
             'avatar' => ['input' => 'input', 'type' => 'file'],
 
             '*_time' => ['input' => 'input', 'type' => 'datetime-local'],
+            '*_name' => ['input' => 'input', 'type' => 'name'],
             'last_*' => ['input' => 'input', 'type' => 'datetime-local'],
             '*_at' => ['input' => 'input', 'type' => 'datetime-local'],
 

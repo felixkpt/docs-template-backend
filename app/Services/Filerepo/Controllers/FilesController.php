@@ -146,6 +146,7 @@ class FilesController extends Controller
         return $file;
     }
 
+
     public function uploadImage($image = null)
     {
         if ($image)
@@ -176,6 +177,22 @@ class FilesController extends Controller
             "url" => FileRepo::url($record),
             "image_id" => $image->id
         ];
+    }
+
+
+    public function show($path)
+    {
+        $filePath = $path;
+
+        
+        if (Storage::disk('local')->exists($filePath)) {
+            $file = Storage::disk('local')->get($filePath);
+
+            return response($file, 200)
+                ->header('Content-Type', Storage::disk('local')->mimeType($filePath));
+        }
+
+        return response()->json(['error' => 'File not found.'], 404);
     }
 
     /**

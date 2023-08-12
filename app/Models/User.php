@@ -8,10 +8,16 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Spatie\Permission\Traits\HasPermissions;
 
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
+
+      // Use an alias for the permissions relationship
+      use HasPermissions {
+        HasPermissions::permissions as direct_permissions;
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -35,7 +41,6 @@ class User extends Authenticatable
         'password',
         'api_token',
         'avatar',
-        'permission_group_id',
         'session_id',
         'is_session_valid',
         'allowed_session_no',
