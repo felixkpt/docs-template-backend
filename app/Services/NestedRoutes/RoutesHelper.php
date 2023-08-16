@@ -5,6 +5,7 @@ namespace App\Services\NestedRoutes;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
 
 class RoutesHelper
 {
@@ -23,14 +24,33 @@ class RoutesHelper
 
             $folder = $routes_path;
             $routes = self::getRoutesReal($folder, $nested_routes_folder, $routes_path, $leftTrim);
+
+            $foldermin = self::getFolderAfterNested($folder, $nested_routes_folder);
             $item = [
-                'folder' => self::getFolderAfterNested($folder, $nested_routes_folder),
+                'folder' => $foldermin,
                 'children' => [],
                 'routes' => $routes,
+                'hidden' => self::getHidden($foldermin),
+                'icon' => self::getIcon($foldermin),
+                'position' => self::getPosition($foldermin),
             ];
 
             $items = self::iterateFolders($folder, $nested_routes_folder, $routes_path, $leftTrim);
+
             array_unshift($items, $item);
+
+            // Sort the items array based on position
+            usort($items, function ($a, $b) {
+                return $a['position'] - $b['position'];
+            });
+
+
+            // Sort the children of each folder based on position
+            foreach ($items as &$item) {
+                usort($item['children'], function ($a, $b) {
+                    return $a['position'] - $b['position'];
+                });
+            }
 
             return $items;
         }
@@ -47,10 +67,16 @@ class RoutesHelper
         foreach ($folders as $folder) {
 
             $routes = self::getRoutesReal($folder, $nested_routes_folder, $routes_path, $leftTrim);
+
+            $foldermin = self::getFolderAfterNested($folder, $nested_routes_folder);
+
             $item = [
-                'folder' => self::getFolderAfterNested($folder, $nested_routes_folder),
+                'folder' => $foldermin,
                 'children' => self::iterateFolders($folder, $nested_routes_folder, $routes_path, $leftTrim),
                 'routes' => $routes,
+                'hidden' => self::getHidden($foldermin),
+                'icon' => self::getIcon($foldermin),
+                'position' => self::getPosition($foldermin),
             ];
 
             $items[] = $item;
@@ -59,6 +85,20 @@ class RoutesHelper
         return $items;
     }
 
+    static function getHidden($folder)
+    {
+        return Permission::where('name', $folder)->first()->hidden ?? null;
+    }
+
+    static function getIcon($folder)
+    {
+        return Permission::where('name', $folder)->first()->icon ?? null;
+    }
+
+    static function getPosition($folder)
+    {
+        return Permission::where('name', $folder)->first()->position ?? 999999;
+    }
 
     static function getRoutesReal($folder, $nested_routes_folder, $routes_path, $leftTrim)
     {

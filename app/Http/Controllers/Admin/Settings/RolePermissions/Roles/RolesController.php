@@ -9,6 +9,7 @@ use Spatie\Permission\Models\Role;
 use App\Repositories\SearchRepo;
 use App\Services\NestedRoutes\GetNestedRoutes;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Models\Permission;
@@ -111,6 +112,20 @@ class RolesController extends Controller
             $permissions = array_merge($permissions, $this->extractAndSavePermissions($nestedRoute, $permissions, $guard_name));
         }
 
+
+        // update positions only
+        foreach ($all_folders as $nestedRoute) {
+            Permission::updateOrCreate(
+                [
+                    'name' => $nestedRoute['folder']
+                ],
+                [
+                    'position' => $nestedRoute['position'],
+                ]
+            );
+            Log::info('Updating folder position:', ['folder' => $nestedRoute['folder'], 'position' => $nestedRoute['position']]);
+        }
+
         $existing = Role::find($role->id)->getAllPermissions()->pluck('id');
 
         $existing = $role->permissions->pluck('id');
@@ -134,6 +149,7 @@ class RolesController extends Controller
         $title = $nestedRoute['title'];
         $icon = $nestedRoute['icon'];
         $hidden = $nestedRoute['hidden'];
+        $position = $nestedRoute['position'] ?? 999999;
         $children = $nestedRoute['children'];
         $routes = $nestedRoute['routes'];
 
@@ -148,6 +164,7 @@ class RolesController extends Controller
                 'title' => $title,
                 'icon' => $icon,
                 'hidden' => $hidden,
+                'position' => $position,
                 'guard_name' => $guard_name,
                 'user_id' => auth()->id() ?? 1
             ]
