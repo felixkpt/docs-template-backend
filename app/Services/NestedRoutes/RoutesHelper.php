@@ -148,6 +148,12 @@ class RoutesHelper
                         $title = end($parts);
                     }
 
+
+                    // Convert camel case to words
+                    $words = preg_split('/(?=[A-Z])/', $title, -1, PREG_SPLIT_NO_EMPTY);
+
+                    // Capitalize the first letter of each word and join them with spaces
+                    $title = implode(' ', array_map(fn ($word) => ucfirst($word), $words));
                     $title = Str::title($title);
 
                     return [

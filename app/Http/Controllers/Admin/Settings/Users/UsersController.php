@@ -13,9 +13,18 @@ class UsersController extends Controller
 {
     public function index()
     {
-        $users = User::with('roles');
-        if (request()->all)
-            return response(['results' => $users->limit(100)->get()]);
+
+        $users = User::with(['roles'])->when(request()->role_id, function ($q) {
+            if (request()->has('negate')) {
+                $q->whereDoesntHave('roles', function ($q) {
+                    $q->where('roles.id', request()->role_id);
+                });
+            } else {
+                $q->whereHas('roles', function ($q) {
+                    $q->where('roles.id', request()->role_id);
+                });
+            }
+        });
 
         $users = SearchRepo::of($users, ['name', 'id'])
             ->addColumn('Roles', function ($user) {
@@ -28,16 +37,16 @@ class UsersController extends Controller
         <i class="icon icon-list2 font-20"></i>
         </button>
         <ul class="dropdown-menu">
-            <li><a class="dropdown-item prepare-navigate" href="/admin/settings/users/user/' . $user->id . '">View</a></li>
-            <li><a class="dropdown-item prepare-editt" data-id="' . $user->id . '" href="/admin/settings/users/user/' . $user->id . '/edit">Edit</a></li>
-            <li><a class="dropdown-item prepare-status-update" data-id="' . $user->id . '" href="/admin/settings/users/user/' . $user->id . '/status-update">' . ($user->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
-            <li><a class="dropdown-item prepare-delete" data-id="' . $user->id . '" href="/admin/settings/users/user/' . $user->id . '">Delete</a></li>
+            <li><a class="dropdown-item prepare-navigate" href="/admin/users/user/' . $user->id . '">View</a></li>
+            <li><a class="dropdown-item prepare-editt" data-id="' . $user->id . '" href="/admin/users/user/' . $user->id . '/edit">Edit</a></li>
+            <li><a class="dropdown-item prepare-status-update" data-id="' . $user->id . '" href="/admin/users/user/' . $user->id . '/status-update">' . ($user->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+            <li><a class="dropdown-item prepare-delete" data-id="' . $user->id . '" href="/admin/users/user/' . $user->id . '">Delete</a></li>
         </ul>
     </div>
     ';
             })->paginate();
 
-        return response(['results' => $users, 'status' => true, 'message' => 'Users list']);
+        return response(['results' => $users, 'status' => true]);
     }
 
     public function create()
@@ -118,8 +127,6 @@ class UsersController extends Controller
     public function destroy(User $user)
     {
         $user->delete();
-
-        // Additional logic if needed
 
         return redirect()->route('users.index')
             ->with('success', 'User deleted successfully.');

@@ -18,6 +18,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
+Route::post('password', [AuthController::class, 'passwordResetLink']);
+
+Route::get('password/{token}', [AuthController::class, 'getEmail'])->name('getEmail');
+Route::post('password-set', [AuthController::class, 'passwordSet'])->name('password.set');
 
 Route::middleware(['auth:sanctum'])->group(function () {
 

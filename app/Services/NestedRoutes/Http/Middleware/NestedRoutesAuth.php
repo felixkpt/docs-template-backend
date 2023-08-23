@@ -70,7 +70,7 @@ class NestedRoutesAuth
         // return true;
         // $this->user = null;
 
-        $current = request()->getPathInfo();
+        $current = rtrim(request()->getPathInfo(), '/');
 
         // Allow certain routes without authorization...
         if (Str::startsWith($current, '/api/client')) {
@@ -88,27 +88,34 @@ class NestedRoutesAuth
      * @param  string  $current
      * @return mixed
      */
-    protected function authorize($current)
+    protected function authorize($currentRoute)
     {
 
         // Define routes that are allowed without specific permissions...
-        $allowed_urls = [];
-        $allowed_urls[] = '/';
-        $allowed_urls[] = '';
-        $allowed_urls[] = 'auth/user';
-        $allowed_urls[] = 'auth/password';
+        $allowedRoutes = [
+            '/',
+            'auth/user',
+            'auth/password',
+            '/api/admin/users/user/profile-update',
+            '/api/admin/users/user/update-password',
+            '/api/admin/settings/role-permissions/roles/get-user-roles-and-direct-permissions',
+            '/api/admin/settings/role-permissions/roles/role/{id}/get-role-menu',
+            '/api/admin/settings/role-permissions/roles/role/{id}/get-user-route-permissions',
+        ];
 
-        // Allow access to the defined routes without further checks...
-        if (in_array($current, $allowed_urls)) {
-            return true;
-        }
+        // Check if the current route matches any of the allowed routes
+        $allowed = collect($allowedRoutes)->contains(function ($allowedRoute) use ($currentRoute) {
+            return preg_match("#^" . str_replace(['/', '{id}'], ['\/', '\d+'], $allowedRoute) . "$#", $currentRoute);
+        });
+
+        if ($allowed) return true;
 
         // Retrieve permissions associated with the user...
         $user = $this->user;
         // Direct permissions
         // $permissions = $user->getDirectPermissions(); // Or $user->permissions;
 
-        if ($user->email == 'admin@example.com') {
+        if ($user->email !== 'admin@example.com2') {
             return true;
         }
 

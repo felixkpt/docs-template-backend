@@ -1,20 +1,27 @@
 <?php
 
-
 namespace App\Repositories;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
- * The SearchRepo class provides functionality for searching and sorting data using Laravel's Eloquent ORM or Query Builder.
+ * The SearchRepoV2 class provides functionality for searching and sorting data using Laravel's Eloquent ORM or Query Builder.
  *
- * Author: Felix (https://github.com/felixkpt)
- * Credits:Ian Kibet
- * Creation Date: July 1, 2023
+ * Created by PhpStorm.
+ * User: iankibet
+ * Date: 7/12/17
+ * Time: 4:09 AM
+ *
+ * This class was contributed by:
+ *   - Ian Kibet (https://gitlab.com/ictianspecialist)
+ *   - Felix (https://github.com/felixkpt)
+ *
+ * Initial update: July 1, 2023.
  * License: MIT
  */
 class SearchRepo
@@ -25,6 +32,7 @@ class SearchRepo
     protected $sortable = [];
     protected $model_name = '';
     protected $fillable = [];
+    protected $request_data;
 
     /**
      * Create a new instance of SearchRepo.
@@ -36,19 +44,19 @@ class SearchRepo
      */
     public static function of($builder, $searchable = [], $sortable = [], $fillable = [])
     {
+
         $self = new self;
         $self->sortable = $sortable;
         $self->builder = $builder;
         $self->fillable = $fillable;
-
-        $term = request()->q;
+        $self->request_data = request()->all();
 
         $model = null;
         if (method_exists($builder, 'getModel')) {
             $model = $builder->getModel();
 
             $currentConnection = DB::getDefaultConnection();
-            $self->model_name = Str::replace('_', ' ', Str::after(class_basename(get_class($model)), $currentConnection . '_'));
+            $self->model_name = str_replace('_', ' ', Str::after(class_basename(get_class($model)), $currentConnection . '_'));
 
             if (!$fillable) {
                 $fill = $model->getFillable();
@@ -59,46 +67,109 @@ class SearchRepo
             $searchable = $searchable ?: $model->searchable;
         }
 
-        if (!empty($term) && !empty($searchable)) {
-            if ($builder instanceof EloquentBuilder) {
-                foreach ($searchable as $column) {
-                    if (Str::contains($column, '.')) {
-                        [$relation, $column] = Str::parseCallback($column, 2);
+        $model_table = $model->getTable();
 
-                        $builder->orWhereHas($relation, function (EloquentBuilder $query) use ($column, $term) {
-                            $query->where($column, 'like', "%$term%");
-                        });
-                    } else {
-                        $builder->orwhere($column, 'like', "%$term%");
+        $request_data = request()->all();
+        $self->request_data = $request_data;
+
+
+        // Handle searching logic
+        $term = $request_data['q'] ?? null;
+
+        $search_field = $request_data['search_field'] ?? null;
+
+        // Define an array to map fields to search strategies
+        $searchStrategyArray = [
+            'is_fcr' => 'equals',
+        ];
+
+        // Determine the search strategy based on the search field
+        $strategy = $searchStrategyArray[$search_field] ?? 'like'; // Default strategy is 'like'
+
+        // Special case: Handle fields ending with '_id' for exact matching
+        if ($strategy === 'like') {
+
+            // Check if the search term is enclosed in quotation marks
+            if (preg_match('/^"(.*)"$/i', $term, $matches) || preg_match('/^\'(.*)\'$/i', $term, $matches)) {
+                $term = $matches[1]; // Strip the quotation marks
+                $strategy = 'equals';
+            }
+        }
+
+        if ($search_field) {
+            $searchable = [$search_field];
+        }
+
+        if (!empty($term) && !empty($searchable)) {
+
+            if ($builder instanceof EloquentBuilder) {
+
+                $builder = $builder->where(function ($q) use ($searchable, $term, $model_table, $strategy) {
+
+                    foreach ($searchable as $column) {
+                        Log::info('Searching:', ['term' => $term, 'model_table' => $model_table, 'col' => $column]);
+
+                        if (Str::contains($column, '.')) {
+
+                            [$relation, $column] = explode('.', $column, 2);
+
+                            $relation = Str::camel($relation);
+
+                            // Apply search condition within the relation
+                            $q->whereHas($relation, function (EloquentBuilder $query) use ($column, $term, $strategy) {
+                                $query->where($column, $strategy === 'like' ? 'like' : '=', $strategy === 'like' ? "%$term%" : "$term");
+                            });
+                        } else {
+                            // Apply search condition on the main table
+                            $q->orWhere($model_table . '.' . $column, $strategy === 'like' ? 'like' : '=', $strategy === 'like' ? "%$term%" : "$term");
+
+                            Log::critical("Search results:", ['res' => $q->first()]);
+                        }
                     }
-                }
+                });
+                
             } elseif ($builder instanceof QueryBuilder) {
                 foreach ($searchable as $column) {
                     if (Str::contains($column, '.')) {
-                        [$relation, $column] = Str::parseCallback($column, 2);
+                        [$relation, $column] = explode('.', $column, 2);
 
-                        $builder->orWhere(function (QueryBuilder $query) use ($relation, $column, $term) {
-                            $query->orWhere($relation . '.' . $column, 'like', "%$term%");
+                        $relation = Str::camel($relation);
+
+                        $builder->orWhere(function (QueryBuilder $query) use ($column, $term, $strategy) {
+                            $query->where($column, $strategy === 'like' ? 'like' : '=', $strategy === 'like' ? "%$term%" : "$term");
                         });
                     } else {
-                        $builder->orWhere($column, 'like', "%$term%");
+                        // Apply search condition on the main table
+                        $builder->orwhere($model_table . '.' . $column, $strategy === 'like' ? 'like' : '=', $strategy === 'like' ? "%$term%" : "$term");
                     }
                 }
             }
         }
 
-        $model_table = $model->getTable();
+        // Sorting logic implementation...
+        if (request()->order_by) {
+            $orderBy = Str::lower(request()->order_by);
 
-        if (request()->has('orderBy')) {
-            $orderBy = Str::lower(request()->orderBy);
+            if (Str::contains($orderBy, '.')) {
+                [$relation, $column] = explode('.', $orderBy, 2);
 
-            if ($model)
-                $col = Str::after($orderBy, $model_table . '.');
-            if ($model && Schema::hasColumn($model_table, $col) || in_array($orderBy, $sortable)) {
-                $orderDirection = request()->orderDirection ?? 'asc';
-                $builder->orderBy($orderBy, $orderDirection);
+                $possibleRelation = Str::camel($relation);
+
+                if ($model && method_exists($model, $possibleRelation)) {
+
+                    $orderBy = $relation . '_id';
+                    if (Schema::hasColumn($model_table, $orderBy) || in_array($orderBy, $sortable)) {
+                        $order_method = request()->order_method ?? 'asc';
+                        $builder->orderBy($orderBy, $order_method);
+                    }
+                }
+            } elseif ($model && Schema::hasColumn($model_table, $orderBy) || in_array($orderBy, $sortable)) {
+                $order_method = request()->order_method ?? 'asc';
+                $builder->orderBy($orderBy, $order_method);
             }
-        } else $builder->orderBy($model_table . '.created_at', 'desc');
+        } else {
+            $builder->orderBy($model_table . '.id', 'desc');
+        }
 
         return $self;
     }
@@ -154,7 +225,17 @@ class SearchRepo
 
         $custom = collect($this->getCustoms());
 
+        // Append all request data to the pagination links
+        $results->appends($this->request_data);
+
+        // for api consumption remove the following line
+        // $pagination = $results->links()->__toString();
+
+        // maintain the following line for api consumption
         $results = $custom->merge($results);
+
+        // for api consumption remove the following line
+        // $results['pagination'] = $pagination;
 
         return $results;
     }
