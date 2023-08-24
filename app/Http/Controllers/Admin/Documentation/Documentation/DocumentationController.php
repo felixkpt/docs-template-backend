@@ -1,20 +1,27 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Documentations\Documentation;
+namespace App\Http\Controllers\Admin\Documentation\Documentation;
 
 use App\Http\Controllers\Controller;
+use App\Models\Documentation;
+use App\Repositories\SearchRepo;
 use Illuminate\Http\Request;
 
 class DocumentationController extends Controller
 {
-    public function update(Request $request)
+    public function show($slug)
     {
-        // Update an existing documentation page
+        $documentation = Documentation::where('slug', $slug);
+
+        $res = SearchRepo::of($documentation, [], [])->first();
+
+        return response(['results' => $res]);
     }
 
-    public function show($id)
+    function update(Request $request, $id)
     {
-        // Show a specific documentation page
+        $request->merge(['id' => $id]);
+        return $this->store($request);
     }
 
     public function destroy($id)

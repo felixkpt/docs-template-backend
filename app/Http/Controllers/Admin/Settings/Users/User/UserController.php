@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Repositories\SearchRepo;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -82,10 +83,18 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|min:3|max:100',
             'email' => 'required|email|unique:users,email,' . $user->id,
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
         ]);
 
         $user->name = $request->name;
         $user->email = $request->email;
+
+        if ($request->hasFile('avatar')) {
+            $datePath = Carbon::now()->format('Y/m/d');
+            $avatarPath = $request->file('avatar')->store('users/' . $datePath);
+            $user->avatar = $avatarPath;
+        }
+
         $user->save();
 
         $user = User::find(auth()->user()->id);

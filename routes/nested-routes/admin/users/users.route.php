@@ -15,9 +15,4 @@ Route::get('/emailsSearch', [$controller, 'searchUserEmails']);
 
 Route::delete('/delete/{user}', [$controller, 'destroyUser']);
 
-Route::get('/failed-logins', [$controller, 'listAttemptedLogins']);
-Route::get('activity-based-usage', [$controller, 'activityBasedUsage']);
-Route::get('inactivity-based-usage',[$controller,'inactivityBasedUsage']);
 Route::get('/export', [$controller, 'exportUsers']);
-Route::get('user-activity-log',[$controller,'userActivityLog']);
-Route::get('user-activity-log/list',[$controller,'listUserActivityLogs']);

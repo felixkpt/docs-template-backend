@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 $controller = AdminController::class;
 
-Route::get('/', [$controller, 'index'])->hidden(true)->name('Admin dash');
+Route::get('/', [$controller, 'index'])->name('Admin dash')->everyone(true);
 Route::get('/search', [$controller, 'search']);
 Route::get('ticket-count-by-issue-sources', [$controller, 'getTicketsByIssueSource']);
 Route::get('social-media-stats', [$controller, 'getSocialMediaStats']);

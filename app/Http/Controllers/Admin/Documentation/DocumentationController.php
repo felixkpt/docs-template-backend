@@ -22,23 +22,14 @@ class DocumentationController extends Controller
                         <i class="icon icon-list2 font-20"></i>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item navigate" href="/admin/documentation/' . $item->slug . '">View</a></li>
-                            <li><a class="dropdown-item prepare-edit" data-id="' . $item->id . '" href="/admin/documentation/' . $item->id . '">Edit</a></li>
-                            <li><a class="dropdown-item prepare-status-update" data-id="' . $item->id . '" href="/admin/documentation/' . $item->id . '/status-update">' . ($item->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+                            <li><a class="dropdown-item autotable-navigate" href="/admin/documentation/documentation/' . $item->slug . '">View</a></li>
+                            <li><a class="dropdown-item autotable-edit" data-id="' . $item->id . '" href="/admin/documentation/documentation/' . $item->id . '">Edit</a></li>
+                            <li><a class="dropdown-item autotable-status-update" data-id="' . $item->id . '" href="/admin/documentation/documentation/' . $item->id . '/status-update">' . ($item->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
                         </ul>
                     </div>
                     ';
             })
             ->paginate();
-
-        return response(['results' => $res]);
-    }
-
-    public function show($slug)
-    {
-        $documentation = Documentation::where('slug', $slug);
-
-        $res = SearchRepo::of($documentation, [], [])->first();
 
         return response(['results' => $res]);
     }
@@ -85,9 +76,4 @@ class DocumentationController extends Controller
         return response(['type' => 'success', 'message' => 'Documentation page ' . $action . ' successfully', 'results' => $res]);
     }
 
-    function update(Request $request, $id)
-    {
-        $request->merge(['id' => $id]);
-        return $this->store($request);
-    }
 }

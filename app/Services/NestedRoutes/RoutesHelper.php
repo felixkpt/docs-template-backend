@@ -118,7 +118,7 @@ class RoutesHelper
             // Get the existing routes before adding new ones
             $existingRoutes = collect(Route::getRoutes())->pluck('uri');
 
-            Route::group(['prefix' => $prefix], function () use ($file_path, $existingRoutes, $folder_after_nested, &$items, $routes_path) {
+            Route::group(['prefix' => $prefix], function () use ($file_path, $existingRoutes, $folder_after_nested, &$items) {
 
                 require $file_path;
 
@@ -126,6 +126,7 @@ class RoutesHelper
                 $routes = collect(Route::getRoutes())->filter(function ($route) use ($existingRoutes) {
                     return !in_array($route->uri, $existingRoutes->toArray());
                 })->map(function ($route) use ($folder_after_nested) {
+
                     $uri = $route->uri;
 
                     $methods = '@' . implode('|@', $route->methods());
@@ -164,7 +165,8 @@ class RoutesHelper
                         'title' => $title,
                         'folder' => $folder_after_nested,
                         'hidden' => $route->hiddenRoute(),
-                        'icon' => $route->getIcon()
+                        'icon' => $route->getIcon(),
+                        'checked' => $route->everyoneRoute()
                     ];
                 });
 
