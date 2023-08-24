@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Settings\RolePermissions\Roles\Role;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Str;
 use Illuminate\Filesystem\Filesystem;
 use Spatie\Permission\Models\Role;
@@ -71,16 +72,21 @@ class RoleController extends Controller
 
         $existing = $role->permissions->pluck('id');
 
-        // Sync role with permissions
-        $role->syncPermissions([...$existing, ...$permissions]);
+        try {
+            // Sync role with permissions
+            $role->syncPermissions([...$existing, ...$permissions]);
 
-        $this->saveJson($role, $all_folders);
+            $this->saveJson($role, $all_folders);
 
-        return response([
-            'status' => 'success',
-            'message' => 'Persssions saved!',
-            'results' => []
-        ]);
+            return response([
+                'message' => 'Persssions saved!',
+            ]);
+        } catch (Exception $e) {
+
+            return response([
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     function extractAndSavePermissions($nestedRoute, $permissions, $guard_name)
@@ -132,21 +138,26 @@ class RoleController extends Controller
     {
         sleep(1);
         // a user can have more than 1 roles
-        $permissions = Role::find($id);
-        if (!$permissions) {
+        $role = Role::find($id);
+        if (!$role) {
             return response()->json(['message' => 'Role not found'], 404);
         }
 
         // Get JSON from storage
-        $filePath = '/system/roles/' . Str::slug($permissions->name) . '_menu.json';
+        $filePath = '/system/roles/' . Str::slug($role->name) . '_menu.json';
 
         if (!Storage::exists($filePath)) {
-            return response()->json(['message' => 'Role ' . $permissions->name . ' permissions file not found'], 404);
+            return response()->json(['message' => 'Role ' . $role->name . ' permissions file not found'], 404);
         }
 
         $jsonContent = file_get_contents(Storage::path($filePath));
 
-        return response()->json(['results' => ['roles' => $permissions, 'menu' => json_decode($jsonContent)]]);
+        // save user's default_role_id
+        $user = User::find(auth()->id());
+        $user->default_role_id = $id;
+        $user->save();
+
+        return response()->json(['results' => ['roles' => $role, 'menu' => json_decode($jsonContent)]]);
     }
 
     function saveRoutesASPermissions($routes, $guard_name)
@@ -217,5 +228,4 @@ class RoleController extends Controller
 
         return response(['message' => "{$user->name} added to role {$role->name}"]);
     }
-
 }

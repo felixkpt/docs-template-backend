@@ -49,6 +49,7 @@ class User extends Authenticatable
         'two_factor_enabled',
         'is_calltronix',
         'theme',
+        'default_role_id',
     ];
 
     /**

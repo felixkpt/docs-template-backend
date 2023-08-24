@@ -30,9 +30,9 @@ class PermissionsController extends Controller
             <i class="icon icon-list2 font-20"></i>
             </button>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item prepare-view" href="/admin/settings/role-permissions/permission/' . $permission->id . '">View</a></li>
-                <li><a class="dropdown-item prepare-edit" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/permissions/' . $permission->id . '">Edit</a></li>
-                <li><a class="dropdown-item prepare-status-update" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/permissions/' . $permission->id . '/status-update">' . ($permission->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+                <li><a class="dropdown-item autotable-view" href="/admin/settings/role-permissions/permission/' . $permission->id . '">View</a></li>
+                <li><a class="dropdown-item autotable-edit" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/permissions/' . $permission->id . '">Edit</a></li>
+                <li><a class="dropdown-item autotable-status-update" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/permissions/' . $permission->id . '/status-update">' . ($permission->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
             </ul>
         </div>
         ';

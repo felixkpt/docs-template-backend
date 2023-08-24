@@ -96,7 +96,7 @@ class UserController extends Controller
         return response(['type' => 'success', 'results' => $user, 'message' => 'User updated Successfully']);
     }
 
-    public function updatePassword()
+    public function updateSelfPassword()
     {
 
         request()->validate([
@@ -105,6 +105,37 @@ class UserController extends Controller
         ]);
 
         $user = User::find(auth()->user()->id);
+
+        $user->password = Hash::make(request('password'));
+        $user->update();
+        $password = request('password');
+
+        $data = [
+            'subject' => 'New Password For ' . config('app.name'),
+            'message' => 'Your ' . config('app.name') . ' new password is a below',
+            'password' => $password,
+            'instruction' => 'Please use the password as it appears.',
+            'user_name' => $user->name,
+            'user_email' => $user->email,
+        ];
+        try {
+            Mail::to($user->email)->send(new SendPassword($data));
+        } catch (\Exception $e) {
+
+            return response(['type' => 'error', 'message' => $e->getMessage()], 500);
+        }
+
+        return response(['type' => 'success', 'message' => 'Password updated Successfully']);
+    }
+
+    public function updateOthersPassword()
+    {
+
+        request()->validate([
+            'password' => 'required|string|min:8|max:100|confirmed',
+        ]);
+
+        $user = User::findOrFail(request()->user_id);
 
         $user->password = Hash::make(request('password'));
         $user->update();

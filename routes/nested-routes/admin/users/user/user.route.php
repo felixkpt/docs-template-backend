@@ -12,7 +12,8 @@ Route::delete('/{user}', [$controller, 'destroy'])->name('users.destroy')->icon(
 Route::post('update', [$controller, 'userProfile']);
 Route::get('token/{id}', [$controller, 'resendToken']);
 Route::patch('profile-update', [$controller, 'profileUpdate']);
-Route::patch('update-password', [$controller, 'updatePassword']);
+Route::patch('update-self-password', [$controller, 'updateSelfPassword'])->hidden(true);
+Route::patch('update-others-password', [$controller, 'updateOthersPassword'])->hidden(true);
 Route::post('unlock/{user_id}', [$controller, 'unlockUser']);
 Route::post('activate/{id}', [$controller, 'activate']);
 Route::post('deactivate/{id}', [$controller, 'deactivate']);
