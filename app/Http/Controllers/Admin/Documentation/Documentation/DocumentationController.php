@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Documentation\Documentation;
 
+use App\Http\Controllers\Admin\Documentation\DocumentationController as DocumentationControllerAll;
 use App\Http\Controllers\Controller;
 use App\Models\Documentation;
 use App\Repositories\SearchRepo;
@@ -9,11 +10,11 @@ use Illuminate\Http\Request;
 
 class DocumentationController extends Controller
 {
-    public function show($slug)
+    public function show($id)
     {
-        $documentation = Documentation::where('slug', $slug);
+        $docs = Documentation::where('id', $id);
 
-        $res = SearchRepo::of($documentation, [], [])->first();
+        $res = SearchRepo::of($docs, [], [])->first();
 
         return response(['results' => $res]);
     }
@@ -21,11 +22,11 @@ class DocumentationController extends Controller
     function update(Request $request, $id)
     {
         $request->merge(['id' => $id]);
-        return $this->store($request);
+        return app(DocumentationControllerAll::class)->store($request);
     }
 
     public function destroy($id)
     {
-        // Delete a documentation page
+        // Delete a docs/doc page
     }
 }

@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Filesystem\Filesystem;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 
@@ -40,46 +40,56 @@ class RoleController extends Controller
     {
 
         $current_folder = $request->current_folder;
-        $all_folders = $request->all_folders;
 
         $role = Role::with(['permissions' => function ($q) use ($current_folder) {
-            $q->where('uri', 'not like', $current_folder[0]['folder'] . '%');
+            $q->where('uri', 'not like', $current_folder['folder'] . '%');
         }])->find($id);
 
         if (!$role) return response(['message' => 'Role not found', 'status' => false,], 404);
 
         $guard_name = $role->guard_name;
-        $permissions = [];
-        foreach ($current_folder as $nestedRoute) {
-            $permissions = array_merge($permissions, $this->extractAndSavePermissions($nestedRoute, $permissions, $guard_name));
-        }
+        $checked_permissions = $this->extractAndSavePermissions($current_folder, [], $guard_name);
 
-
-        // update positions only
-        foreach ($all_folders as $nestedRoute) {
-            Permission::updateOrCreate(
-                [
-                    'name' => $nestedRoute['folder']
-                ],
-                [
-                    'position' => $nestedRoute['position'],
-                ]
-            );
-            Log::info('Updating folder position:', ['folder' => $nestedRoute['folder'], 'position' => $nestedRoute['position']]);
-        }
-
-        $existing = Role::find($role->id)->getAllPermissions()->pluck('id');
-
-        $existing = $role->permissions->pluck('id');
+        $existing = $role->permissions->pluck('id')->toArray() ?? [];
 
         try {
-            // Sync role with permissions
-            $role->syncPermissions([...$existing, ...$permissions]);
+            DB::beginTransaction();
 
-            $this->saveJson($role, $all_folders);
+            // Step 1: Merge existing and current permissions
+            $mergedPermissions = array_merge($existing, $checked_permissions);
+
+            $role->syncPermissions([]);
+
+            // Sync role with permissions
+            $role->syncPermissions([$mergedPermissions]);
+            DB::commit();
 
             return response([
-                'message' => 'Persssions saved!',
+                'message' => 'Permissions saved!',
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response([
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    function storeRoleMenu(Request $request, $id)
+    {
+
+        $menu = $request->menu;
+
+        $role = Role::find($id);
+
+        if (!$role) return response(['message' => 'Role not found', 'status' => false,], 404);
+
+        try {
+            $this->saveJson($role, $menu);
+
+            return response([
+                'message' => 'Menu saved!',
             ]);
         } catch (Exception $e) {
 
@@ -88,6 +98,7 @@ class RoleController extends Controller
             ]);
         }
     }
+
 
     function extractAndSavePermissions($nestedRoute, $permissions, $guard_name)
     {

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('title')->nullable();
             $table->string('icon')->nullable();
             $table->boolean('hidden')->default(false);
+            $table->string('folder')->nullable();
             $table->unsignedBigInteger('position')->default(999999);
             $table->unsignedBigInteger('user_id')->default(0);
             $table->unsignedTinyInteger('status')->default(1);
@@ -32,6 +33,7 @@ return new class extends Migration
             $table->dropColumn('title');
             $table->dropColumn('icon');
             $table->dropColumn('hidden');
+            $table->dropColumn('folder');
             $table->dropColumn('position');
             $table->dropColumn('user_id');
         });

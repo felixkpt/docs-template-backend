@@ -4,17 +4,10 @@ namespace App\Http\Controllers\Admin\Settings\RolePermissions\Roles;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Support\Str;
-use Illuminate\Filesystem\Filesystem;
 use Spatie\Permission\Models\Role;
 use App\Repositories\SearchRepo;
-use App\Services\NestedRoutes\GetNestedRoutes;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Spatie\Permission\Models\Permission;
-
 class RolesController extends Controller
 {
 
