@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\Admin;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -17,9 +17,8 @@ class AdminPermissionSeeder extends Seeder
     {
         Permission::updateOrCreate([
             'name' => 'admin_access',
-            'user_id' => User::inRandomOrder()->first()->id,
-            // 80% 1
-            'status' => rand(0, 10) <= 8 ? 1 : 0,
+            'user_id' => User::first()->id,
+            'status' => 1,
         ]);
     }
 }

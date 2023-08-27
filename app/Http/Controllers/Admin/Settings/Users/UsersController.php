@@ -38,8 +38,14 @@ class UsersController extends Controller
         </button>
         <ul class="dropdown-menu">
             <li><a class="dropdown-item autotable-navigate" href="/admin/users/user/' . $user->id . '">View</a></li>
-            <li><a class="dropdown-item autotable-edit" data-id="' . $user->id . '" href="/admin/users/user/' . $user->id . '/edit">Edit</a></li>
-            <li><a class="dropdown-item autotable-status-update" data-id="' . $user->id . '" href="/admin/users/user/' . $user->id . '/status-update">' . ($user->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+            '
+                    .
+                    (checkPermission('users', 'post') ?
+                        '<li><a class="dropdown-item autotable-edit" data-id="' . $user->id . '" href="/admin/users/user/' . $user->id . '/edit">Edit</a></li>'
+                        :
+                        '')
+                    .
+                    '<li><a class="dropdown-item autotable-status-update" data-id="' . $user->id . '" href="/admin/users/user/' . $user->id . '/status-update">' . ($user->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
             <li><a class="dropdown-item autotable-delete" data-id="' . $user->id . '" href="/admin/users/user/' . $user->id . '">Delete</a></li>
         </ul>
     </div>

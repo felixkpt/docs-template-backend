@@ -9,7 +9,9 @@ use Illuminate\Support\Str;
 use Illuminate\Filesystem\Filesystem;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 
@@ -21,11 +23,7 @@ class RoleController extends Controller
     protected $folder_icons = [];
     protected $hidden_folders = [];
 
-    function update(Request $request, $id)
-    {
-        $request->merge(['id' => $id]);
-        return $this->store($request);
-    }
+    protected $checked_permissions = [];
 
     public function show($id)
     {
@@ -36,36 +34,80 @@ class RoleController extends Controller
         ]);
     }
 
+    function update(Request $request, $id)
+    {
+        $request->merge(['id' => $id]);
+        return $this->store($request);
+    }
+
+    /**
+     * Store role permissions for a specific role.
+     *
+     * @param  Request $request
+     * @param  int     $id
+     * @return Response
+     */
     function storeRolePermissions(Request $request, $id)
     {
+        $request->validate([
+            'current_folder' => ['required', 'array'],
+        ]);
 
+        $start = Carbon::now();
+
+        // Get the current folder from the request
         $current_folder = $request->current_folder;
+        $parent_folder = $current_folder['folder'];
+        $unchecked = $current_folder['unchecked'];
 
-        $role = Role::with(['permissions' => function ($q) use ($current_folder) {
-            $q->where('uri', 'not like', $current_folder['folder'] . '%');
-        }])->find($id);
+        // Find the role by ID along with its permissions, excluding those from the current folder
+        $role = Role::find($id);
 
-        if (!$role) return response(['message' => 'Role not found', 'status' => false,], 404);
+        // If the role doesn't exist, return a 404 response
+        if (!$role) {
+            return response(['message' => 'Role not found', 'status' => false], 404);
+        }
 
+        // Get the guard name of the role
         $guard_name = $role->guard_name;
-        $checked_permissions = $this->extractAndSavePermissions($current_folder, [], $guard_name);
 
-        $existing = $role->permissions->pluck('id')->toArray() ?? [];
+        // Extract and save permissions for the current folder
+        $this->extractAndSavePermissions($parent_folder, $current_folder, $guard_name);
+
+        Log::info('checked_permissions', ['Folder' => $parent_folder, 'Perms' => $this->checked_permissions]);
+
+        sleep(2);
 
         try {
             DB::beginTransaction();
 
-            // Step 1: Merge existing and current permissions
-            $mergedPermissions = array_merge($existing, $checked_permissions);
+            // Step 1: Delete old permissions that haven't been updated in the current request
+            $untouched_permissions = Permission::where('parent_folder', $parent_folder)
+                ->where('updated_at', '<', Carbon::createFromTimestamp($start->timestamp))
+                ->whereNotIn('uri', $unchecked);
 
-            $role->syncPermissions([]);
+            $count = $untouched_permissions->count();
 
-            // Sync role with permissions
+            // Delete outdated permissions
+            $untouched_permissions->delete();
+
+            // Find the role by ID along with its permissions, excluding those from the current folder
+            $existing = Role::with(['permissions' => function ($q) use ($parent_folder) {
+                $q->where('parent_folder', '!=', $parent_folder);
+            }])->find($id)->permissions->pluck('id')->toArray() ?? [];
+
+
+            // Step 3: Merge existing and current permissions
+            $mergedPermissions = array_merge($existing, $this->checked_permissions);
+
+            Log::critical('mergedPermissions count:', ['existing' => $existing]);
+
+            // Step 4: Sync role with permissions
             $role->syncPermissions([$mergedPermissions]);
             DB::commit();
 
             return response([
-                'message' => 'Permissions saved!',
+                'message' => "Permissions have been successfully updated for {$parent_folder}. {$count} outdated route permissions have been removed.",
             ]);
         } catch (Exception $e) {
             DB::rollBack();
@@ -76,14 +118,30 @@ class RoleController extends Controller
         }
     }
 
-    function storeRoleMenu(Request $request, $id)
+    function storeRoleMenuAndCleanPermissions(Request $request, $id)
     {
 
         $menu = $request->menu;
+        $saved_folders = $request->saved_folders;
+        $all_folders = $request->all_folders;
+
+        $request->validate([
+            'menu' => ['required', 'array'],
+            'saved_folders' => ['required', 'array'],
+            'all_folders' => ['required', 'array'],
+        ]);
 
         $role = Role::find($id);
-
         if (!$role) return response(['message' => 'Role not found', 'status' => false,], 404);
+
+        // 1. Remove permissions for parent folders not in the list of saved folders (probably the current role does not need the folders anymore)
+        $permissionsToRemove = $role->permissions()->whereNotIn('parent_folder', $saved_folders)->pluck('id')->toArray();
+        Log::info('permissionsToRemove', ['permissionsToRemove' => $permissionsToRemove]);
+        $role->permissions()->detach($permissionsToRemove);
+
+        // 2. Delete permissions for parent folders not in all_folders (probably the folders were renamed or deleted)
+        $permissionsToDelete = Permission::whereNotIn('parent_folder', $all_folders);
+        $permissionsToDelete->delete();
 
         try {
             $this->saveJson($role, $menu);
@@ -95,12 +153,11 @@ class RoleController extends Controller
 
             return response([
                 'message' => $e->getMessage(),
-            ]);
+            ], 422);
         }
     }
 
-
-    function extractAndSavePermissions($nestedRoute, $permissions, $guard_name)
+    function extractAndSavePermissions($parent_folder, $nestedRoute, $guard_name)
     {
 
         $folder = $nestedRoute['folder'];
@@ -114,7 +171,7 @@ class RoleController extends Controller
         $uri = $folder;
         $slug = Str::slug(Str::replace('/', ' ', $uri), '.');
 
-        $permissions[] = Permission::updateOrCreate(
+        $this->checked_permissions[] = Permission::updateOrCreate(
             ['name' => $slug],
             [
                 'name' => $slug,
@@ -122,24 +179,24 @@ class RoleController extends Controller
                 'title' => $title,
                 'icon' => $icon,
                 'hidden' => $hidden,
+                'parent_folder' => $parent_folder,
                 'position' => $position,
                 'guard_name' => $guard_name,
-                'user_id' => auth()->id() ?? 1
+                'user_id' => auth()->id() ?? 1,
+                'updated_at' => Carbon::now(),
             ]
         )->id ?? 0;
 
         if (count($routes) > 0) {
-            $permissions = array_merge($permissions, $this->saveRoutesASPermissions($routes, $guard_name));
+            array_push($this->checked_permissions, ...$this->saveRoutesASPermissions($parent_folder, $routes, $guard_name));
         }
 
         if (count($children) > 0) {
 
             foreach ($children as $nestedRoute) {
-                $permissions = array_merge($permissions, $this->extractAndSavePermissions($nestedRoute, $permissions, $guard_name));
+                $this->extractAndSavePermissions($parent_folder, $nestedRoute, $guard_name);
             }
         }
-
-        return $permissions;
     }
 
     /**
@@ -154,6 +211,11 @@ class RoleController extends Controller
             return response()->json(['message' => 'Role not found'], 404);
         }
 
+        // save user's default_role_id
+        $user = User::find(auth()->id());
+        $user->default_role_id = $id;
+        $user->save();
+
         // Get JSON from storage
         $filePath = '/system/roles/' . Str::slug($role->name) . '_menu.json';
 
@@ -163,19 +225,13 @@ class RoleController extends Controller
 
         $jsonContent = file_get_contents(Storage::path($filePath));
 
-        // save user's default_role_id
-        $user = User::find(auth()->id());
-        $user->default_role_id = $id;
-        $user->save();
-
         return response()->json(['results' => ['roles' => $role, 'menu' => json_decode($jsonContent)]]);
     }
 
-    function saveRoutesASPermissions($routes, $guard_name)
+    function saveRoutesASPermissions($parent_folder, $routes, $guard_name)
     {
         $permissions = [];
         foreach ($routes as $route) {
-
 
             $uri = $route['uri'];
             $title = $route['title'];
@@ -186,11 +242,13 @@ class RoleController extends Controller
                 ['name' => $slug],
                 [
                     'name' => $slug,
+                    'parent_folder' => $parent_folder,
                     'uri' => $uri,
                     'title' => $title,
                     'icon' => $icon,
                     'guard_name' => $guard_name,
-                    'user_id' => auth()->id() ?? 1
+                    'user_id' => auth()->id() ?? 1,
+                    'updated_at' => Carbon::now(),
                 ]
             )->id ?? 0;
         }

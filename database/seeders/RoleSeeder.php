@@ -92,6 +92,7 @@ class RoleSeeder extends Seeder
                 ['name' => $row['name']],
                 [
                     'name' => $row['name'],
+                    'guard_name' => 'web',
                     'user_id' => User::inRandomOrder()->first()->id,
                     // 80% 1
                     'status' => rand(0, 10) <= 8 ? 1 : 0,

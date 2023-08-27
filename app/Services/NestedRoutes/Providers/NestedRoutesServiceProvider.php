@@ -8,6 +8,17 @@ use Illuminate\Support\ServiceProvider;
 class NestedRoutesServiceProvider extends ServiceProvider
 {
 
+
+    /**
+     * Register services.
+     *
+     * @return void
+     */
+    public function register()
+    {
+        require_once app_path('Services/NestedRoutes/functions.php');
+    }
+    
     /**
      * Bootstrap services.
      *

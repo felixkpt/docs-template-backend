@@ -8,6 +8,7 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
 
 class NestedRoutesAuth
 {
@@ -43,6 +44,8 @@ class NestedRoutesAuth
      */
     public function handle($request, Closure $next)
     {
+        // App::abort(403, "Not authorized to access this page/resource/endpoint");
+
         // Set up necessary data for authorization checks...
         if ($request) {
             $this->request = $request;
@@ -96,15 +99,17 @@ class NestedRoutesAuth
             '/',
             'auth/user',
             'auth/password',
-            '/api/admin/users/user/profile-update',
-            '/api/admin/users/user/update-password',
             '/api/admin/settings/role-permissions/roles/get-user-roles-and-direct-permissions',
             '/api/admin/settings/role-permissions/roles/role/{id}/get-role-menu',
             '/api/admin/settings/role-permissions/roles/role/{id}/get-user-route-permissions',
+            '/api/admin/file-repo/*',
         ];
 
         // Check if the current route matches any of the allowed routes
         $allowed = collect($allowedRoutes)->contains(function ($allowedRoute) use ($currentRoute) {
+
+            if (Str::endsWith($allowedRoute, '*') && Str::startsWith($currentRoute, Str::replaceLast('*', '', $allowedRoute))) return true;
+
             return preg_match("#^" . str_replace(['/', '{id}'], ['\/', '\d+'], $allowedRoute) . "$#", $currentRoute);
         });
 
@@ -115,9 +120,9 @@ class NestedRoutesAuth
         // Direct permissions
         // $permissions = $user->getDirectPermissions(); // Or $user->permissions;
 
-        if ($user->email !== 'admin@example.com2') {
-            return true;
-        }
+        // if ($user->email !== 'admin@example.com') {
+        // return true;
+        // }
 
         // Permissions inherited from the user's roles
         $permissions = $user->getPermissionsViaRoles()->pluck('uri');

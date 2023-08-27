@@ -23,7 +23,14 @@ class DocumentationController extends Controller
                         </button>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item autotable-navigate" href="/admin/documentation/documentation/' . $item->id . '">View</a></li>
-                            <li><a class="dropdown-item autotable-navigate" data-id="' . $item->id . '" href="/admin/documentation/documentation/' . $item->id . '/edit">Edit</a></li>
+                            '
+                    .
+                    (checkPermission('documentation', 'post') ?
+                        '<li><a class="dropdown-item autotable-navigate" data-id="' . $item->id . '" href="/admin/documentation/documentation/' . $item->id . '/edit">Edit</a></li>'
+                        :
+                        '')
+                    .
+                    '
                             <li><a class="dropdown-item autotable-status-update" data-id="' . $item->id . '" href="/admin/documentation/documentation/' . $item->id . '/status-update">' . ($item->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
                         </ul>
                     </div>

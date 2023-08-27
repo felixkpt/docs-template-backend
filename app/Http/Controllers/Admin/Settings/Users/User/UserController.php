@@ -31,8 +31,10 @@ class UserController extends Controller
         return response(['status' => true, 'results' => SearchRepo::of($user, [], [], ['name', 'email'])]);
     }
 
-    public function update(Request $request, User $user)
+    public function update(Request $request, $id)
     {
+
+        $user = User::findOrFail($id);
 
         $request->validate([
             'name' => 'required',
@@ -74,6 +76,10 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');
+    }
+
+    function profileShow() {
+        
     }
 
     public function profileUpdate(Request $request)
@@ -214,9 +220,7 @@ class UserController extends Controller
 
 
 
-
         $authUserEmail = auth()->user()->email;
-
 
         return SearchRepo::of($failedloginattempts)
             ->addColumn('login_successful', function ($failedloginattempts) {
@@ -232,8 +236,10 @@ class UserController extends Controller
             ->paginate();
     }
 
-    public function destroy(User $user)
+
+    public function destroy($id)
     {
+        $user = User::findOrFail($id);
         $user->delete();
 
         return redirect()->route('users.index')

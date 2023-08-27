@@ -14,8 +14,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
-      // Use an alias for the permissions relationship
-      use HasPermissions {
+    // Use an alias for the permissions relationship
+    use HasPermissions {
         HasPermissions::permissions as direct_permissions;
     }
 
@@ -72,7 +72,8 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    function tickets() {
+    function tickets()
+    {
         return $this->hasMany(Ticket::class);
     }
 }
