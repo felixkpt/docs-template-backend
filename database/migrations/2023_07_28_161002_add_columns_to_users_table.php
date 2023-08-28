@@ -13,7 +13,6 @@ return new class extends Migration
             $table->string('middle_name')->nullable();
             $table->string('last_name')->nullable();
             $table->unsignedBigInteger('phone')->nullable();
-            $table->unsignedTinyInteger('status')->default(1);
             $table->tinyInteger('two_factor_valid')->default(0);
             $table->dateTime('last_login_date')->nullable();
             $table->dateTime('two_factor_expires_at')->nullable();
@@ -27,6 +26,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('two_factor_enabled')->default(1);
             $table->unsignedTinyInteger('is_calltronix')->default(0);
             $table->string('theme')->default('light');
+            $table->unsignedInteger('status_id')->default(1);
             $table->unsignedBigInteger('user_id')->default(0);
         });
     }
@@ -36,7 +36,6 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('middle_name');
             $table->dropColumn('phone');
-            $table->dropColumn('status');
             $table->dropColumn('two_factor_valid');
             $table->dropColumn('last_login_date');
             $table->dropColumn('two_factor_expires_at');
@@ -51,6 +50,7 @@ return new class extends Migration
             $table->dropColumn('two_factor_enabled');
             $table->dropColumn('is_calltronix');
             $table->dropColumn('theme');
+            $table->dropColumn('status_id');
             $table->dropColumn('user_id');
         });
     }

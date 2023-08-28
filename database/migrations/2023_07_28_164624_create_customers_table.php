@@ -41,7 +41,7 @@ return new class extends Migration
             $table->unsignedInteger('order_frequency_id')->nullable();
             $table->unsignedInteger('order_day_id')->nullable();
             $table->string('contact_person')->nullable();
-            $table->unsignedTinyInteger('status')->default(1);
+            $table->unsignedInteger('status_id')->default(1);
         });
     }
 

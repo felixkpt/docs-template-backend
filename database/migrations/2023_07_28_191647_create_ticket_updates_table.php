@@ -24,13 +24,13 @@ return new class extends Migration
             $table->unsignedBigInteger('previous_department_id')->nullable();
             $table->unsignedBigInteger('previous_assigned_to')->default(0);
             $table->longText('comment')->nullable();
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedTinyInteger('status')->default(1);
             $table->timestamps();
             $table->unsignedTinyInteger('from_mail_scanner')->default(0);
             $table->dateTime('read_at')->nullable();
             $table->unsignedBigInteger('first_read_by')->nullable();
             $table->unsignedTinyInteger('update_type')->default(1);
+            $table->unsignedInteger('status_id')->default(1);
+            $table->unsignedBigInteger('user_id');
 
         });
     }

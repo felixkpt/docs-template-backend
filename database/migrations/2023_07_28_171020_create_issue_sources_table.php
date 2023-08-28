@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name', 255);
             $table->string('icon_slug', 255)->nullable();
-            $table->unsignedTinyInteger('status')->default(1);
+            $table->unsignedInteger('status_id')->default(1);
             $table->unsignedBigInteger('user_id')->default(0);
             $table->timestamps();
         });

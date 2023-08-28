@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('icon')->nullable();
             $table->boolean('hidden')->default(false);
             $table->unsignedBigInteger('position')->default(999999);
+            $table->unsignedInteger('status_id')->default(1);
             $table->unsignedBigInteger('user_id')->default(0);
-            $table->unsignedTinyInteger('status')->default(1);
         });
     }
 
@@ -35,6 +35,7 @@ return new class extends Migration
             $table->dropColumn('icon');
             $table->dropColumn('hidden');
             $table->dropColumn('position');
+            $table->dropColumn('status_id');
             $table->dropColumn('user_id');
         });
     }

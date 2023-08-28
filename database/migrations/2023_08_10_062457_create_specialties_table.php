@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('specialties', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->tinyInteger('status')->unsigned()->default(1);
+            $table->unsignedInteger('status_id')->unsigned()->default(1);
             $table->bigInteger('user_id')->unsigned()->default(0);
             $table->timestamps();
         });

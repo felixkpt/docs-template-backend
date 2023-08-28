@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->unsignedBigInteger('user_id');
-            $table->unsignedTinyInteger('status')->default(1);
+            $table->unsignedInteger('status_id')->default(1);
             $table->timestamps();
         });
     }

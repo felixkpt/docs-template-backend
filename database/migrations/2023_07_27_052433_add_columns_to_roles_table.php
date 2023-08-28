@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('roles', function (Blueprint $table) {
             $table->unsignedBigInteger('user_id')->default(0);
-            $table->unsignedInteger('status')->default(1);
+            $table->unsignedInteger('status_id')->default(1);
         });
     }
 
@@ -24,7 +24,7 @@ return new class extends Migration
     {
         Schema::table('roles', function (Blueprint $table) {
             $table->dropColumn('user_id');
-            $table->dropColumn('status');
+            $table->dropColumn('status_id');
         });
     }
 };

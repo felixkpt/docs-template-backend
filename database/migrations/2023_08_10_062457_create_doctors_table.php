@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->unsignedBigInteger('phone')->nullable();
             $table->string('email')->nullable();
-            $table->tinyInteger('status')->unsigned()->default(1);
+            $table->unsignedInteger('status_id')->unsigned()->default(1);
             $table->bigInteger('user_id')->unsigned()->default(0);
             $table->bigInteger('speciality_id')->unsigned()->default(0);
             $table->timestamps();

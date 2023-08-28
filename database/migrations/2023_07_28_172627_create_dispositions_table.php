@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name')->index();
             $table->integer('priority_id')->unsigned()->nullable();
             $table->bigInteger('user_id')->unsigned();
-            $table->tinyInteger('status')->unsigned()->default(1);
+            $table->unsignedInteger('status_id')->unsigned()->default(1);
             $table->tinyInteger('fcr')->unsigned()->default(1);
             $table->timestamps();
         });

@@ -23,10 +23,8 @@ return new class extends Migration
             $table->unsignedInteger('department_id')->nullable();
             $table->unsignedBigInteger('assigned_to')->nullable();
             $table->unsignedTinyInteger('priority');
-            $table->unsignedBigInteger('user_id');
             $table->unsignedInteger('ticket_status_id');
             $table->unsignedBigInteger('queue_id')->nullable();
-            $table->unsignedTinyInteger('status')->default(1);
             $table->unsignedTinyInteger('fcr')->default(1);
             $table->unsignedBigInteger('ticket_tat')->nullable();
             $table->timestamps();
@@ -51,6 +49,8 @@ return new class extends Migration
             $table->datetime('resolved_at')->nullable();
             $table->unsignedTinyInteger('has_failed_mail_alert')->default(0);
             $table->unsignedTinyInteger('reopened')->default(0);
+            $table->unsignedInteger('status_id')->default(1);
+            $table->unsignedBigInteger('user_id');
         });
     }
 

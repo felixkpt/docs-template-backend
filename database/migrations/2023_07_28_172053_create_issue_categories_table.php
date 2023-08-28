@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('issue_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->tinyInteger('status')->unsigned()->default(1);
+            $table->unsignedInteger('status_id')->unsigned()->default(1);
             $table->unsignedBigInteger('user_id')->default(0);
             $table->timestamps();
         });

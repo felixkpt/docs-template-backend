@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->unsignedBigInteger('company_type_id')->nullable();
             $table->unsignedBigInteger('user_id');
-            $table->unsignedTinyInteger('status')->default(1);
+            $table->unsignedInteger('status_id')->default(1);
             $table->timestamps();
             $table->unsignedBigInteger('country_id')->nullable();
             $table->string('city')->nullable();

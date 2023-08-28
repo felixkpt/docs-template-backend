@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Status;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,7 @@ class SearchRepo
     protected $sortable = [];
     protected $model_name = '';
     protected $fillable = [];
+    protected $statuses = [];
     protected $request_data;
 
     /**
@@ -63,6 +65,8 @@ class SearchRepo
                 $fill = array_diff($fill, ['user_id']);
                 $self->fillable = $fill;
             }
+
+            $self->statuses = Status::select('id', 'name')->get()->toArray();
 
             $searchable = $searchable ?: $model->searchable;
         }
@@ -127,7 +131,6 @@ class SearchRepo
                         }
                     }
                 });
-                
             } elseif ($builder instanceof QueryBuilder) {
                 foreach ($searchable as $column) {
                     if (Str::contains($column, '.')) {
@@ -293,7 +296,11 @@ class SearchRepo
 
     function getCustoms()
     {
-        $arr = ['sortable' => $this->sortable, 'fillable' => $this->getFillable($this->fillable), 'model_name' => $this->model_name, 'model_name_plural' => Str::plural($this->model_name)];
+        $arr = [
+            'sortable' => $this->sortable, 'fillable' => $this->getFillable($this->fillable),
+            'model_name' => $this->model_name, 'model_name_plural' => Str::plural($this->model_name),
+            'statuses' => $this->statuses
+        ];
         return $arr;
     }
 
@@ -305,6 +312,7 @@ class SearchRepo
             'priority_no' => ['input' => 'input', 'type' => 'number'],
 
             'content*' => ['input' => 'textarea', 'type' => null],
+            'description*' => ['input' => 'textarea', 'type' => null],
 
             'text' => ['input' => 'input', 'type' => 'url'],
 
