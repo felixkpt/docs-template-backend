@@ -18,7 +18,7 @@ class StatusesController extends Controller
         if (request()->all == '1')
             return response(['results' => $statuses->get()]);
 
-        $statuses = SearchRepo::of($statuses, ['name'], ['name', 'id'])
+        $statuses = SearchRepo::of($statuses, ['id', 'name'], ['id', 'name'])
             ->addColumn('action', function ($status) {
                 return '
         <div class="dropdown">
