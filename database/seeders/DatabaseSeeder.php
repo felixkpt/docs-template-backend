@@ -3,6 +3,9 @@
 namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
+use Database\Seeders\Admin\AdminRoleSeeder;
+use Database\Seeders\Admin\AdminUserSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -14,25 +17,26 @@ class DatabaseSeeder extends Seeder
     {
         $arr = [
             AdminUserSeeder::class,
-            PermissionSeeder::class,
-            RoleSeeder::class,
-            UsersTableSeeder::class,
-            CompanyTypeSeeder::class,
-            CompaniesTableSeeder::class,
-            DepartmentSeeder::class,
-            IssueSourceSeeder::class,
-            IssueCategorySeeder::class,
-            DispositionSeeder::class,
-            SlaLevelSeeder::class,
-            QueueSeeder::class,
-            TicketStatusSeeder::class,
+            // AdminRoleSeeder::class,
+            // PermissionSeeder::class,
+            // RoleSeeder::class,
+            // UsersTableSeeder::class,
+            // CompanyTypeSeeder::class,
+            // CompaniesTableSeeder::class,
+            // DepartmentSeeder::class,
+            // IssueSourceSeeder::class,
+            // IssueCategorySeeder::class,
+            // DispositionSeeder::class,
+            // SlaLevelSeeder::class,
+            // QueueSeeder::class,
+            // TicketStatusSeeder::class,
 
-            CustomersTableSeeder::class,
-            DocumentationSeeder::class,
-            TicketSeeder::class,
+            // CustomersTableSeeder::class,
+            // DocumentationSeeder::class,
+            // TicketSeeder::class,
         ];
 
-        shuffle($arr);
+        // shuffle($arr);
 
         $this->call($arr);
 

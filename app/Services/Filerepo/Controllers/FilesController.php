@@ -13,31 +13,28 @@ use Carbon\Carbon;
 class FilesController extends Controller
 {
 
-    protected $folder;
+    protected $files_folder;
     protected $delete_url = "admin/file-repo/tmp/delete";
 
     function __construct()
     {
-        if (request()->folder)
-            $this->folder = rtrim(request()->folder, '/') . '/' . Carbon::now()->format('Y/m/d');
+        if (request()->files_folder)
+            $this->files_folder = rtrim(request()->files_folder, '/') . '/' . Carbon::now()->format('Y/m/d');
         else
-            $this->folder = 'uncategorized/' . Carbon::now()->format('Y/m/d');
+            $this->files_folder = 'uncategorized/' . Carbon::now()->format('Y/m/d');
     }
 
     /**
      * loadDropzone -> store files
      */
-    public function storeFile()
+    public function saveFiles($modelRecord)
     {
+
         if (request()->clear == 1)
             return FileRepo::deleteOldTempFiles();
 
-        return $this->saveFiles();
-    }
+        $files = request()->file('files_array') ?: [];
 
-    public function saveFiles($uploadFiles = null)
-    {
-        $files = $uploadFiles ?? (request()->file('files') ?: []);
         $preview = [];
         $config = [];
         $tmp_files_array = [];
@@ -55,8 +52,9 @@ class FilesController extends Controller
 
             $tmp_file_name = $image->getClientOriginalName();
             $ext = $image->getClientOriginalExtension();
-            $file_name = Str::slug(microtime() . $tmp_file_name) . "." . $ext;
-            $path = $this->folder . '/' . $file_name;
+            $base_name = Str::slug(pathinfo($tmp_file_name, PATHINFO_FILENAME)); // Get the base name without extension
+            $file_name = $base_name . "-" . Str::slug(microtime()) . "." . $ext;
+            $path = $this->files_folder . '/' . $file_name;
 
             $temp_file_arr = [
                 'file_name' => $tmp_file_name,
@@ -66,20 +64,21 @@ class FilesController extends Controller
                 'tmp_file_name' => $file_name,
                 'file_path' => $path,
                 'mime_type' => $image->getMimeType(),
-                'path' => url($this->folder . '/' . $file_name)
+                'path' => url($this->files_folder . '/' . $file_name)
             ];
 
             array_push($tmp_files_array, $temp_file_arr);
 
             array_push($session_array, $temp_file_arr);
 
+
             try {
                 if (!Storage::disk(env('FILESYSTEM_DRIVER', 'local'))->exists($path)) {
                     $file_type = self::getFileType($image->getMimeType());
 
                     $file = $image;
-                    $folder = $this->folder;
-                    $record = FileRepo::uploadFile(null, $file, $folder, $file_name, 0, true, request()->_form_token, 0);
+                    $folder = $this->files_folder;
+                    $record = FileRepo::uploadFile($modelRecord, $file, $folder, $file_name, 0, true,);
 
                     // skip to next array key if failed to save file
                     if ($record === false) continue;
@@ -92,7 +91,7 @@ class FilesController extends Controller
                         'previewAsData' => true,
                         'size' => $image->getSize(),
                         'url' => url($this->delete_url) . '/' . $record->id . '/?_token=' . csrf_token(), //delete url
-                        'path' => url($this->folder . '/' . $file_name)
+                        'path' => url($this->files_folder . '/' . $file_name)
                     ];
 
                     array_push($config, $config_data);
@@ -184,7 +183,7 @@ class FilesController extends Controller
     {
         $filePath = $path;
 
-        
+
         if (Storage::disk('local')->exists($filePath)) {
             $file = Storage::disk('local')->get($filePath);
 

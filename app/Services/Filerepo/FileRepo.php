@@ -23,20 +23,19 @@ class  FileRepo
     /**
      * Uploads a file.
      *
-     * @param Model|null      $record      The associated model record (optional).
+     * @param Model      $record      The associated model record.
      * @param UploadedFile    $file        The file to upload, an UploadedFile object.
      * @param string|null     $folder      The folder path where the file should be saved (optional).
      * @param string|null     $filename    The desired filename for the uploaded file (optional).
      * @param int|null        $update_id   The update ID (optional).
      * @param bool            $public      Indicates whether the file should be publicly accessible (default: true).
-     * @param string|null     $form_token  The form token (optional).
      * @param int             $status      The status value (default: 1).
      *
      * @return \Illuminate\Database\Eloquent\Model|\Illuminate\Database\Query\Builder|object|null
      *         Returns the model or query builder instance if the file was successfully uploaded and saved,
      *         or null if unsuccessful.
      */
-    public static function uploadFile(Model $record = null, UploadedFile $file, $folder = null, $filename = null, int $update_id = null, bool $public = true, string $form_token = null, int $status = 1, $create_record = true)
+    public static function uploadFile(Model $record, UploadedFile $file, $folder = null, $filename = null, int $update_id = null, bool $public = true, int $status = 1)
     {
 
         if (env('FILESYSTEM_DRIVER') == 'gcs') {
@@ -45,15 +44,12 @@ class  FileRepo
             $path = self::saveLocally($file, $folder, $filename, $public);
         }
 
-
-        if ($create_record) {
-            // save the upload details to files table
-            if ($path) {
-                return self::insertFile($record, $file, $filename, $path, $update_id, $form_token, $status);
-            } else {
-                return null;
-            }
-        } else return null;
+        // save the upload details to files table
+        if ($path) {
+            return self::insertFile($record, $file, $filename, $path, $update_id, $status);
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -168,11 +164,10 @@ class  FileRepo
      * @param  string  $filename The filename for the file.
      * @param  string  $path The file path.
      * @param  int|null  $update_id The update ID.
-     * @param  string|null  $form_token The form token.
      * @param  int  $status The status of the file.
      * @return mixed The inserted file record.
      */
-    private static function insertFile($record, $file, $filename, $path, $update_id = null, $form_token = null, $status = 1)
+    private static function insertFile($record, $file, $filename, $path, $update_id = null, $status = 1)
     {
         [$model_instance_id, $model_id] = getModelDetails($record);
 
@@ -184,7 +179,7 @@ class  FileRepo
 
 
         if (is_array($path)) {
-            Log::critical('FileRepo::', ['message' => $path]); 
+            Log::critical('FileRepo::', ['message' => $path]);
             return null;
         }
 
@@ -199,7 +194,7 @@ class  FileRepo
             'size' => $fileSize,
             'update_id' => $update_id,
             'status' => $status,
-            'form_token' => $form_token,
+            'form_token' => null,
             'created_by' => $created_by,
         ]);
 

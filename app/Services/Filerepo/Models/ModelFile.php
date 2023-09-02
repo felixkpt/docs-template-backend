@@ -10,6 +10,22 @@ class ModelFile extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'model_instance_id',
+        'model_id',
+        'merged_from_id',
+        'name',
+        'unique_name',
+        'extension',
+        'disk',
+        'path',
+        'size',
+        'update_id',
+        'created_by',
+        'status',
+        'form_token',
+    ]; 
+       
     public function attachable()
     {
         return $this->morphTo();

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Documentation;
 use App\Http\Controllers\Controller;
 use App\Models\Documentation;
 use App\Repositories\SearchRepo;
+use App\Services\Filerepo\Controllers\FilesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -48,13 +49,15 @@ class DocumentationController extends Controller
 
     public function store(Request $request)
     {
+
         // Validate the incoming request data
         $validatedData = $request->validate([
-            'title' => 'required|string|max:255|unique:docs/docs,title,' . $request->id . ',id', // Ensure title is unique
+            'title' => 'required|string|max:255|unique:documentation,title,' . $request->id . ',id', // Ensure title is unique
             'content_short' => 'required|string',
             'content' => 'required|string',
             'image' => 'nullable|string',
             'status' => 'required|string',
+            'files' => 'required',
         ]);
 
         // Generate the slug from the title
@@ -79,6 +82,11 @@ class DocumentationController extends Controller
         // Create a new Documentation instance with the validated data
 
         $res = Documentation::updateOrCreate(['id' => $request->id], $validatedData);
+
+        if (request()->hasFile('files_array')) {
+            $uploader = new FilesController();
+            $uploader->saveFiles($res);
+        }
 
         $action = 'created';
         if ($request->id)

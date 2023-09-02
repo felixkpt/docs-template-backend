@@ -204,7 +204,6 @@ class RoleController extends Controller
      */
     public function getRoleMenu(string $id)
     {
-        sleep(1);
         // a user can have more than 1 roles
         $role = Role::find($id);
         if (!$role) {
@@ -283,18 +282,19 @@ class RoleController extends Controller
         return response(['results' => $route_permissions]);
     }
 
-    function addUser()
+    function addUser($id)
     {
+
+        $role = Role::find($id);
+        if (!$role) return response(['message' => 'Role not found', 'status' => false,], 404);
+
         request()->validate([
-            'role_id' => 'required|exists:roles,id',
             'user_id' => 'required|exists:users,id',
         ]);
-
-        $role = Role::find(request()->role_id);
 
         $user = User::find(request()->user_id);
         $user->assignRole($role);
 
-        return response(['message' => "{$user->name} added to role {$role->name}"]);
+        return response(['results' => $user, 'message' => "{$user->name} added to role {$role->name}"]);
     }
 }

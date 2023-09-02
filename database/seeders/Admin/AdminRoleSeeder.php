@@ -25,11 +25,11 @@ class AdminRoleSeeder extends Seeder
                 'name' => 'Super Admin',
                 'guard_name' => 'api',
                 'user_id' => User::first()->id,
-                'status' => 1,
+                'status_id' => 1,
             ]
         );
 
-        User::first()->syncRoles([$role]);
+        User::first()->assignRole($role);
 
         if ($role_counts === 0) {
 

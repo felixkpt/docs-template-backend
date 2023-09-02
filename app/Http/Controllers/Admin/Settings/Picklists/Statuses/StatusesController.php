@@ -45,14 +45,13 @@ class StatusesController extends Controller
         $validateUser = Validator::make(
             $data,
             [
-                'name' => 'required|unique:roles,name,' . $request->id . ',id',
+                'name' => 'required|unique:statues,name,' . $request->id . ',id',
                 'description' => 'required'
             ]
         );
 
         if ($validateUser->fails()) {
             return response()->json([
-                'status' => false,
                 'message' => 'validation error',
                 'errors' => $validateUser->errors()
             ], 401);
@@ -75,10 +74,9 @@ class StatusesController extends Controller
 
     public function show($id)
     {
-        $role = Status::findOrFail($id);
+        $status = Status::findOrFail($id);
         return response()->json([
-            'status' => true,
-            'results' => $role,
+            'results' => $status,
         ]);
     }
 

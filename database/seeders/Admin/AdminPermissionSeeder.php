@@ -18,7 +18,7 @@ class AdminPermissionSeeder extends Seeder
         Permission::updateOrCreate([
             'name' => 'admin_access',
             'user_id' => User::first()->id,
-            'status' => 1,
+            'status_id' => 1,
         ]);
     }
 }

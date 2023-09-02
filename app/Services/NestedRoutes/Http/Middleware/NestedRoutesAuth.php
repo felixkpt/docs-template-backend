@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Models\Role;
 
 class NestedRoutesAuth
 {
@@ -115,22 +116,14 @@ class NestedRoutesAuth
 
         if ($allowed) return true;
 
-        // Retrieve permissions associated with the user...
         $user = $this->user;
-        // Direct permissions
-        // $permissions = $user->getDirectPermissions(); // Or $user->permissions;
 
         // if ($user->email !== 'admin@example.com') {
         // return true;
         // }
 
-        // Permissions inherited from the user's roles
-        $permissions = $user->getPermissionsViaRoles()->pluck('uri');
-
-        // dd($user->email, $user->getRoleNames(),$permissions);
-
-        // All permissions which apply to the user (inherited and direct)
-        // $user->getAllPermissions();
+        // Retrieve permissions inherited from the user's default_role_id
+        $permissions = Role::findOrFail($user->default_role_id)->permissions->pluck('uri');
 
         // Get the current route and request method...
         $incoming_route = Str::after(Route::getCurrentRoute()->uri, 'api/');
