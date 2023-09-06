@@ -23,7 +23,7 @@ class  FileRepo
     /**
      * Uploads a file.
      *
-     * @param Model      $record      The associated model record.
+     * @param Model|null      $record      The associated model record (optional).
      * @param UploadedFile    $file        The file to upload, an UploadedFile object.
      * @param string|null     $folder      The folder path where the file should be saved (optional).
      * @param string|null     $filename    The desired filename for the uploaded file (optional).
@@ -35,7 +35,7 @@ class  FileRepo
      *         Returns the model or query builder instance if the file was successfully uploaded and saved,
      *         or null if unsuccessful.
      */
-    public static function uploadFile(Model $record, UploadedFile $file, $folder = null, $filename = null, int $update_id = null, bool $public = true, int $status = 1)
+    public static function uploadFile(Model|null $record, UploadedFile $file, $folder = null, $filename = null, int $update_id = null, bool $public = true, int $status = 1)
     {
 
         if (env('FILESYSTEM_DRIVER') == 'gcs') {
@@ -170,13 +170,13 @@ class  FileRepo
     private static function insertFile($record, $file, $filename, $path, $update_id = null, $status = 1)
     {
         [$model_instance_id, $model_id] = getModelDetails($record);
+        Log::alert('FileRepo md:',[ $model_instance_id, $model_id]);
 
         $originalFileName = $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $systemFileName = $filename;
         $fileSize = $file->getSize();
         $created_by = auth()->check() ? auth()->user()->id : null;
-
 
         if (is_array($path)) {
             Log::critical('FileRepo::', ['message' => $path]);

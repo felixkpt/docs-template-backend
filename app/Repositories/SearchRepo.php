@@ -267,7 +267,17 @@ class SearchRepo
      */
     function first($columns = ['*'])
     {
-        $results = ['data' => $this->builder->first($columns)];
+        // Retrieve the first result without pagination
+        $result = $this->builder->first($columns);
+
+        if ($result) {
+            // Loop through added custom columns and add them to the stdClass object
+            foreach ($this->addedColumns as $column => $callback) {
+                $result->$column = $callback($result);
+            }
+        }
+
+        $results = ['data' => $result];
         $custom = collect($this->getCustoms());
 
         $results = $custom->merge($results);

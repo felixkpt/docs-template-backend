@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         $arr = [
             AdminUserSeeder::class,
-            // AdminRoleSeeder::class,
+            AdminRoleSeeder::class,
             // PermissionSeeder::class,
             // RoleSeeder::class,
             // UsersTableSeeder::class,

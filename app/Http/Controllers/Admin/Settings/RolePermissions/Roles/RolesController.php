@@ -27,9 +27,9 @@ class RolesController extends Controller
             <i class="icon icon-list2 font-20"></i>
             </button>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item autotable-navigate" href="/admin/settings/role-permissions/roles/role/' . $role->id . '">View</a></li>
-                <li><a class="dropdown-item autotable-edit" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/role/' . $role->id . '/edit">Edit</a></li>
-                <li><a class="dropdown-item autotable-status-update" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/role/' . $role->id . '/status-update">' . ($role->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+                <li><a class="dropdown-item autotable-navigate" href="/admin/settings/role-permissions/roles/detail/' . $role->id . '">View</a></li>
+                <li><a class="dropdown-item autotable-edit" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/detail/' . $role->id . '/edit">Edit</a></li>
+                <li><a class="dropdown-item autotable-status-update" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/detail/' . $role->id . '/status-update">' . ($role->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
             </ul>
         </div>
         ';
