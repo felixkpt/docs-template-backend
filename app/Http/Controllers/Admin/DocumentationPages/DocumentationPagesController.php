@@ -1,21 +1,20 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Documentation;
+namespace App\Http\Controllers\Admin\DocumentationPages;
 
 use App\Http\Controllers\Controller;
-use App\Models\Documentation;
+use App\Models\DocumentationPage;
 use App\Models\PostStatus;
 use App\Repositories\SearchRepo;
 use App\Services\Filerepo\Controllers\FilesController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-class DocumentationController extends Controller
+class DocumentationPagesController extends Controller
 {
     public function index()
     {
-        $docs = Documentation::query();
+        $docs = DocumentationPage::query();
 
         $res = SearchRepo::of($docs, ['title', 'content_short'], ['id', 'title', 'status', 'user_id'], ['title', 'content_short', 'content', 'image', 'status'])
             ->addColumn('action', function ($item) {
@@ -55,11 +54,11 @@ class DocumentationController extends Controller
 
         // Validate the incoming request data
         $validatedData = $request->validate([
-            'title' => 'required|string|max:255|unique:documentations,title,' . $request->id . ',id', // Ensure title is unique
+            'topic_id' => 'required|exists:documentation_topics,id',
+            'title' => 'required|string|max:255|unique:documentation_pages,title,' . $request->id . ',id', // Ensure title is unique
             'content_short' => 'required|string|max:255',
             'content' => 'required|string',
             'image' => 'required|image',
-            'status_id' => 'required|exists:post_statuses,id',
         ]);
 
         // Generate the slug from the title
@@ -69,7 +68,7 @@ class DocumentationController extends Controller
 
             // Check if the generated slug is unique, if not, add a suffix
             $count = 1;
-            while (Documentation::where('slug', $slug)->exists()) {
+            while (DocumentationPage::where('slug', $slug)->exists()) {
                 $slug = Str::slug($validatedData['title']) . '-' . $count;
                 $count++;
             }
@@ -83,7 +82,7 @@ class DocumentationController extends Controller
 
         // Create a new Documentation instance with the validated data
 
-        $documentation = Documentation::updateOrCreate(['id' => $request->id], $validatedData);
+        $documentation = DocumentationPage::updateOrCreate(['id' => $request->id], $validatedData);
 
         if (request()->hasFile('image')) {
             $uploader = new FilesController();

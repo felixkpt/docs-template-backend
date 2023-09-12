@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\DocumentationPage;
 use Illuminate\Database\Seeder;
 use Faker\Factory as Faker;
-use App\Models\Documentation;
 use App\Models\User;
 use App\Services\Client;
 use Exception;
@@ -26,7 +26,7 @@ class DocumentationSeeder extends Seeder
         $totalRecords = 512100;
         $batchSize = 500; // Set the desired batch size
 
-        if (Documentation::count() >= $totalRecords) return;
+        if (DocumentationPage::count() >= $totalRecords) return;
 
         $totalBatches = ceil($totalRecords / $batchSize);
 
@@ -88,7 +88,7 @@ class DocumentationSeeder extends Seeder
             $userId = User::inRandomOrder()->first()->id;
 
             // Create the documentation
-            $documentation = Documentation::updateOrCreate(['title' => $title], [
+            $documentation = DocumentationPage::updateOrCreate(['title' => $title], [
                 'title' => $title,
                 'slug' => $slug,
                 'content' => $content,

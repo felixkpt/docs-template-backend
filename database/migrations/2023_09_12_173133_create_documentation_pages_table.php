@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('documentations', function (Blueprint $table) {
+        Schema::create('documentation_pages', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('topic_id');
+            $table->foreign('topic_id')->references('id')->on('documentation_topics');
             $table->string('title');
             $table->string('slug');
             $table->string('content_short')->nullable();
@@ -29,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('documentations');
+        Schema::dropIfExists('documentation_pages');
     }
 };

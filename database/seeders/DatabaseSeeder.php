@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             AdminRoleSeeder::class,
             StatusSeeder::class,
             PostStatusSeeder::class,
+            DocumentationCategoriesSeeder::class,
+            DocumentationTopicsSeeder::class,
             // PermissionSeeder::class,
             // RoleSeeder::class,
             // UsersTableSeeder::class,

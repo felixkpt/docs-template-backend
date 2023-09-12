@@ -34,7 +34,7 @@ class SearchRepo
     protected $model;
     protected $model_name = '';
     protected $fillable = [];
-    protected $excludeFromFillables = ['user_id'];
+    protected $excludeFromFillables = ['user_id', 'status_id'];
     protected $statuses = [];
     protected $request_data;
 

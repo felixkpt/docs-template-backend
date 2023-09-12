@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Admin\Documentation\Detail;
 
-use App\Http\Controllers\Admin\Documentation\DocumentationController;
+use App\Http\Controllers\Admin\DocumentationPages\DocumentationPagesController;
 use App\Http\Controllers\Controller;
-use App\Models\Documentation;
+use App\Models\DocumentationPage;
 use App\Models\PostStatus;
 use App\Repositories\SearchRepo;
 use Illuminate\Http\Request;
 
-class DocumentationDetailController extends Controller
+class DocumentationPageDetailController extends Controller
 {
     public function show($id)
     {
-        $docs = Documentation::where('id', $id);
+        $docs = DocumentationPage::where('id', $id);
 
         $res = SearchRepo::of($docs, [], [])
             ->addColumn('content', fn ($item) => refreshTemporaryTokensInString($item->content))
@@ -25,7 +25,7 @@ class DocumentationDetailController extends Controller
     function update(Request $request, $id)
     {
         $request->merge(['id' => $id]);
-        return app(DocumentationController::class)->store($request);
+        return app(DocumentationPagesController::class)->store($request);
     }
 
     public function destroy($id)
