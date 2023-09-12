@@ -8,6 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class DocumentationPage extends Model
 {
     use HasFactory;
-    protected $fillable = ['title', 'slug', 'content_short', 'content', 'image', 'status_id', 'user_id'];
+    protected $fillable = ['title', 'slug', 'content_short', 'content', 'image', 'category_id', 'topic_id', 'status_id', 'user_id'];
 
 }

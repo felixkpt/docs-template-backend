@@ -104,6 +104,12 @@ class CategoriesController extends Controller
         return response(['type' => 'success', 'message' => 'Documentation topic ' . $action . ' successfully', 'results' => $documentation]);
     }
 
+    function update(Request $request, $id)
+    {
+        $request->merge(['id' => $id]);
+        return $this->store($request);
+    }
+
     public function show($slug)
     {
         $docs = DocumentationCategory::where('slug', $slug);

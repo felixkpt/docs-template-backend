@@ -14,10 +14,14 @@ class TopicsController extends Controller
 {
     public function index()
     {
-        $docs = DocumentationTopic::query()->when(request()->slug, function ($q) {
-            $cat = DocumentationCategory::whereslug(request()->slug)->first();
-            $q->where('category_id', $cat->id);
-        });
+        $docs = DocumentationTopic::query()
+            ->when(request()->category_id, function ($q) {
+                $q->where('category_id', request()->category_id);
+            })
+            ->when(request()->slug, function ($q) {
+                $cat = DocumentationCategory::whereslug(request()->slug)->first();
+                $q->where('category_id', $cat->id);
+            });
 
         $res = SearchRepo::of($docs, ['id', 'title', 'image'])
             ->sortable(['id', 'image'])

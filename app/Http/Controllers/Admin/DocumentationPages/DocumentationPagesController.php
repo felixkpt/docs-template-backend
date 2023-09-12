@@ -54,6 +54,7 @@ class DocumentationPagesController extends Controller
 
         // Validate the incoming request data
         $validatedData = $request->validate([
+            'category_id' => 'required|exists:documentation_categories,id',
             'topic_id' => 'required|exists:documentation_topics,id',
             'title' => 'required|string|max:255|unique:documentation_pages,title,' . $request->id . ',id', // Ensure title is unique
             'content_short' => 'required|string|max:255',

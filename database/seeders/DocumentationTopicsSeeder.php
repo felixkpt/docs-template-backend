@@ -11,14 +11,14 @@ class DocumentationTopicsSeeder extends Seeder
     public function run()
     {
         $topics = [
-            ['section_id' => 1, 'title' => 'Introduction'],
-            ['section_id' => 1, 'title' => 'Components'],
-            ['section_id' => 2, 'title' => 'Database Schema'],
+            ['category_id' => 1, 'title' => 'Introduction'],
+            ['category_id' => 1, 'title' => 'Components'],
+            ['category_id' => 2, 'title' => 'Database Schema'],
         ];
 
         foreach ($topics as $topic) {
             $slug = Str::slug($topic['title']);
-            DocumentationTopic::updateOrCreate(['slug' => $slug], ['section_id' => $topic['section_id'], 'title' => $topic['title'], 'slug' => $slug]);
+            DocumentationTopic::updateOrCreate(['slug' => $slug], ['category_id' => $topic['category_id'], 'title' => $topic['title'], 'slug' => $slug]);
         }
     }
 }

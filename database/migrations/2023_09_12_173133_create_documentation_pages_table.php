@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('documentation_pages', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('category_id');
+            $table->foreign('category_id')->references('id')->on('documentation_categories');
             $table->unsignedBigInteger('topic_id');
             $table->foreign('topic_id')->references('id')->on('documentation_topics');
             $table->string('title');
