@@ -297,4 +297,10 @@ class RoleDetailController extends Controller
 
         return response(['results' => $user, 'message' => "{$user->name} added to role {$role->name}"]);
     }
+
+    function statusUpdate($id) {
+        $status_id = request()->status_id;
+        Role::find($id)->update(['status_id' => $status_id]);
+        return response(['message' => "Status updated successfully."]);        
+    }
 }

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
- * The SearchRepoV2 class provides functionality for searching and sorting data using Laravel's Eloquent ORM or Query Builder.
+ * The SearchRepo class provides functionality for searching and sorting data using Laravel's Eloquent ORM or Query Builder.
  *
  * Created by PhpStorm.
  * User: iankibet
@@ -31,8 +31,10 @@ class SearchRepo
 
     protected $addedColumns = [];
     protected $sortable = [];
+    protected $model;
     protected $model_name = '';
     protected $fillable = [];
+    protected $excludeFromFillables = ['user_id'];
     protected $statuses = [];
     protected $request_data;
 
@@ -41,32 +43,22 @@ class SearchRepo
      *
      * @param mixed $builder The builder instance (EloquentBuilder or QueryBuilder).
      * @param array $searchable The columns to search against.
-     * @param array $sortable The sortable columns.
      * @return SearchRepo The SearchRepo instance.
      */
-    public static function of($builder, $searchable = [], $sortable = [], $fillable = [])
+    public static function of($builder, $searchable = [])
     {
 
         $self = new self;
-        $self->sortable = $sortable;
         $self->builder = $builder;
-        $self->fillable = $fillable;
         $self->request_data = request()->all();
 
         $model = null;
         if (method_exists($builder, 'getModel')) {
             $model = $builder->getModel();
+            $self->model = $model;
 
             $currentConnection = DB::getDefaultConnection();
             $self->model_name = str_replace('_', ' ', Str::after(class_basename(get_class($model)), $currentConnection . '_'));
-
-            if (!$fillable) {
-                $fill = $model->getFillable();
-                $fill = array_diff($fill, ['user_id']);
-                $self->fillable = $fill;
-            }
-
-            $self->statuses = Status::select('id', 'name')->get()->toArray();
 
             $searchable = $searchable ?: $model->searchable;
         }
@@ -149,7 +141,19 @@ class SearchRepo
             }
         }
 
-        // Sorting logic implementation...
+        return $self;
+    }
+
+    /**
+     * Perform sorting of the search results.
+     */
+    function sort()
+    {
+
+        $builder = $this->builder;
+
+        $model_table = $this->model->getTable();
+
         if (request()->order_by) {
             $orderBy = Str::lower(request()->order_by);
 
@@ -158,25 +162,29 @@ class SearchRepo
 
                 $possibleRelation = Str::camel($relation);
 
-                if ($model && method_exists($model, $possibleRelation)) {
+                if ($this->model && method_exists($this->model, $possibleRelation)) {
 
                     $orderBy = $relation . '_id';
-                    if (Schema::hasColumn($model_table, $orderBy) || in_array($orderBy, $sortable)) {
-                        $order_method = request()->order_method ?? 'asc';
-                        $builder->orderBy($orderBy, $order_method);
+                    if (Schema::hasColumn($model_table, $orderBy) || in_array($orderBy, $this->sortable)) {
+                        $order_direction = request()->order_direction ?? 'asc';
+                        $builder->orderBy($orderBy, $order_direction);
                     }
                 }
-            } elseif ($model && Schema::hasColumn($model_table, $orderBy) || in_array($orderBy, $sortable)) {
-                $order_method = request()->order_method ?? 'asc';
-                $builder->orderBy($orderBy, $order_method);
+            } elseif ($this->model && Schema::hasColumn($model_table, $orderBy) || in_array($orderBy, $this->sortable)) {
+                $order_direction = request()->order_direction ?? 'asc';
+                $builder->orderBy($orderBy, $order_direction);
             }
         } else {
             $builder->orderBy($model_table . '.id', 'desc');
         }
-
-        return $self;
     }
 
+    /**
+     * Add an order by clause to the query builder.
+     *
+     * @param string $column The column to order by.
+     * @return $this The SearchRepo instance.
+     */
     function orderBy($column)
     {
         $this->builder = $this->builder->orderBy($column);
@@ -207,6 +215,9 @@ class SearchRepo
      */
     function paginate($perPage = 20, $columns = ['*'])
     {
+
+        $this->sort();
+
         $builder = $this->builder;
 
         $perPage = request()->per_page ?? 10;
@@ -251,7 +262,10 @@ class SearchRepo
      */
     function get($columns = ['*'])
     {
-        $results = ['data' => $this->builder->get($columns)];
+        $this->sort();
+        $builder =  $this->builder;
+
+        $results = ['data' => $builder->get($columns)];
         $custom = collect($this->getCustoms());
 
         $results = $custom->merge($results);
@@ -260,10 +274,10 @@ class SearchRepo
     }
 
     /**
-     * Get the first search results without pagination.
+     * Get the first search result without pagination.
      *
      * @param array $columns The columns to retrieve.
-     * @return array The search results.
+     * @return array The search result.
      */
     function first($columns = ['*'])
     {
@@ -304,16 +318,66 @@ class SearchRepo
         return $data;
     }
 
+    /**
+     * Specify sortable columns for the search results.
+     *
+     * @param array $sortable The sortable columns.
+     * @return $this The SearchRepo instance.
+     */
+    public function sortable($sortable = [])
+    {
+        if (!empty($sortable))
+            $this->sortable = $sortable;
+
+        return $this;
+    }
+
+    /**
+     * Specify fillable columns for the search results.
+     *
+     * @param array $fillable The fillable columns.
+     * @return $this The SearchRepo instance.
+     */
+    public function fillable($fillable = [])
+    {
+        if (!empty($fillable))
+            $this->fillable = $fillable;
+
+        return $this;
+    }
+
+    /**
+     * Get an array of custom data to include in the search results.
+     *
+     * @return array An array of custom data.
+     */
     function getCustoms()
     {
+        $fillable = $this->fillable;
+
+        if (count($fillable) === 0  && $this->model) {
+            $fill = $this->model->getFillable();
+            $fill = array_diff($fill, $this->excludeFromFillables);
+            $fillable = $fill;
+        }
+
+        $statuses = $this->statuses ?: Status::select('id', 'name')->get()->toArray();
+
         $arr = [
-            'sortable' => $this->sortable, 'fillable' => $this->getFillable($this->fillable),
+            'sortable' => $this->sortable,
+            'fillable' => $this->getFillable($fillable),
             'model_name' => $this->model_name, 'model_name_plural' => Str::plural($this->model_name),
-            'statuses' => $this->statuses
+            'statuses' => $statuses
         ];
         return $arr;
     }
 
+    /**
+     * Get an array of guessed input types for fillable columns.
+     *
+     * @param array $fillable The fillable column names.
+     * @return array An array of guessed input types.
+     */
     function getFillable(array $fillable)
     {
         $guess_array = [
@@ -367,5 +431,20 @@ class SearchRepo
         }
 
         return $guessed;
+    }
+
+    /**
+     * Specify custom statuses for the search results.
+     *
+     * @param mixed $statuses The custom statuses to include.
+     * @return $this The SearchRepo instance.
+     */
+    public function statuses($statuses)
+    {
+        if (!empty($statuses)) {
+            $this->statuses = $statuses;
+        }
+
+        return $this;
     }
 }

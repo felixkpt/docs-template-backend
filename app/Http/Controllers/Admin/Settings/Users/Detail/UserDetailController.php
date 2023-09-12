@@ -74,12 +74,11 @@ class UserDetailController extends Controller
             $user->syncPermissions($permissions);
         }
 
-        return redirect()->route('users.index')
-            ->with('success', 'User updated successfully.');
+        return response(['message' => 'User updated successfully.']);
     }
 
-    function profileShow() {
-        
+    function profileShow()
+    {
     }
 
     public function profileUpdate(Request $request)

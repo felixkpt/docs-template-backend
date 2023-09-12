@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('content_short')->nullable();
             $table->longText('content');
             $table->string('image')->nullable();
-            $table->enum('status', ['draft', 'pending_review', 'scheduled', 'published', 'private', 'trash', 'archived', 'draft_in_review', 'rejected'])->default('draft');
+            $table->unsignedInteger('status_id')->default(1);
             $table->bigInteger('user_id')->unsigned()->default(0);
             $table->timestamps();
         });

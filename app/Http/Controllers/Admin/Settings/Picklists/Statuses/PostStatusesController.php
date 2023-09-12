@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\Admin\Settings\Picklists\Statuses;
 
 use App\Http\Controllers\Controller;
-use App\Models\Status;
+use App\Models\PostStatus;
 use App\Repositories\SearchRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class StatusesController extends Controller
+class PostStatusesController extends Controller
 {
     public function index()
     {
 
-        $statuses = Status::query();
+        $statuses = PostStatus::query();
 
         if (request()->all == '1')
             return response(['results' => $statuses->get()]);
@@ -27,13 +27,15 @@ class StatusesController extends Controller
             <i class="icon icon-list2 font-20"></i>
             </button>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item autotable-view" data-id="' . $status->id . '" href="/admin/settings/picklists/statuses/default/' . $status->id . '">View</a></li>
-                <li><a class="dropdown-item autotable-edit" data-id="' . $status->id . '" href="/admin/settings/picklists/statuses/default/' . $status->id . '">Edit</a></li>
-                <li><a class="dropdown-item autotable-status-update" data-id="' . $status->id . '" href="/admin/settings/picklists/statuses/default/' . $status->id . '/status-update">' . ($status->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+                <li><a class="dropdown-item autotable-view" data-id="' . $status->id . '" href="/admin/settings/picklists/statuses/post/' . $status->id . '">View</a></li>
+                <li><a class="dropdown-item autotable-edit" data-id="' . $status->id . '" href="/admin/settings/picklists/statuses/post/' . $status->id . '">Edit</a></li>
+                <li><a class="dropdown-item autotable-status-update" data-id="' . $status->id . '" href="/admin/settings/picklists/statuses/post/' . $status->id . '/status-update">' . ($status->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
             </ul>
         </div>
         ';
-            })->paginate();
+            })
+            ->statuses(\App\Models\PostStatus::class)
+            ->paginate();
 
         return response(['results' => $statuses]);
     }
@@ -46,9 +48,10 @@ class StatusesController extends Controller
         $validateUser = Validator::make(
             $data,
             [
-                'name' => 'required|string|unique:statuses,name,' . $request->id . ',id',
+                'name' => 'required|string|unique:post_statuses,name,' . $request->id . ',id',
                 'description' => 'required|string',
                 'icon' => 'required|string',
+
             ]
         );
 
@@ -63,7 +66,7 @@ class StatusesController extends Controller
         if ($request->id)
             $action = 'updated';
 
-        $res = Status::updateOrCreate(['id' => $request->id], $data);
+        $res = PostStatus::updateOrCreate(['id' => $request->id], $data);
         return response(['type' => 'success', 'message' => 'Status ' . $action . ' successfully', 'results' => $res]);
     }
 
@@ -76,7 +79,7 @@ class StatusesController extends Controller
 
     public function show($id)
     {
-        $status = Status::findOrFail($id);
+        $status = PostStatus::findOrFail($id);
         return response()->json([
             'results' => $status,
         ]);

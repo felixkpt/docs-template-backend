@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Documentation;
 
 use App\Http\Controllers\Controller;
 use App\Models\Documentation;
+use App\Models\PostStatus;
 use App\Repositories\SearchRepo;
 use App\Services\Filerepo\Controllers\FilesController;
 use Illuminate\Http\Request;
@@ -38,6 +39,7 @@ class DocumentationController extends Controller
                     </div>
                     ';
             })
+            ->statuses(PostStatus::select('id', 'name')->get())
             ->paginate();
 
         return response(['results' => $res]);
@@ -57,7 +59,7 @@ class DocumentationController extends Controller
             'content_short' => 'required|string|max:255',
             'content' => 'required|string',
             'image' => 'required|image',
-            'status' => 'required|string',
+            'status_id' => 'required|exists:post_statuses,id',
         ]);
 
         // Generate the slug from the title
