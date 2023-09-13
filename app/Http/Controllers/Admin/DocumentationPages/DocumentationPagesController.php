@@ -24,16 +24,16 @@ class DocumentationPagesController extends Controller
                         <i class="icon icon-list2 font-20"></i>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item autotable-navigate" href="/admin/documentation/detail/' . $item->id . '">View</a></li>
+                            <li><a class="dropdown-item autotable-navigate" href="/admin/docs/detail/' . $item->id . '">View</a></li>
                             '
                     .
-                    (checkPermission('documentation', 'post') ?
-                        '<li><a class="dropdown-item autotable-navigate" data-id="' . $item->id . '" href="/admin/documentation/detail/' . $item->id . '/edit">Edit</a></li>'
+                    (checkPermission('docs', 'post') ?
+                        '<li><a class="dropdown-item autotable-navigate" data-id="' . $item->id . '" href="/admin/docs/detail/' . $item->id . '/edit">Edit</a></li>'
                         :
                         '')
                     .
                     '
-                            <li><a class="dropdown-item autotable-status-update" data-id="' . $item->id . '" href="/admin/documentation/detail/' . $item->id . '/status-update">' . ($item->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+                            <li><a class="dropdown-item autotable-status-update" data-id="' . $item->id . '" href="/admin/docs/detail/' . $item->id . '/status-update">' . ($item->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
                         </ul>
                     </div>
                     ';

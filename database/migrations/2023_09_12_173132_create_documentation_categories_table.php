@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('slug');
             $table->string('image')->nullable();
+            $table->string('parent_category_id')->default(0);
             $table->unsignedInteger('status_id')->default(1);
             $table->unsignedBigInteger('user_id')->default(0);
             $table->timestamps();
