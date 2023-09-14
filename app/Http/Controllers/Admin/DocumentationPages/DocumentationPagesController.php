@@ -14,7 +14,7 @@ class DocumentationPagesController extends Controller
 {
     public function index()
     {
-        $docs = DocumentationPage::query();
+        $docs = DocumentationPage::query()->when(isset(request()->category_id) && request()->category_id > 0, fn ($q) => $q->where('category_id', request()->category_id));
 
         $res = SearchRepo::of($docs, ['title', 'content_short'], ['id', 'title', 'status', 'user_id'], ['title', 'content_short', 'content', 'image', 'status'])
             ->addColumn('action', function ($item) {
@@ -60,6 +60,7 @@ class DocumentationPagesController extends Controller
             'content_short' => 'required|string|max:255',
             'content' => 'required|string',
             'image' => 'required|image',
+            'priority_number' => 'nullable|integer|between:0,99999999',
         ]);
 
         if ($request->slug) {

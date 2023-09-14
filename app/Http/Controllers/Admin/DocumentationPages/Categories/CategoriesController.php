@@ -17,8 +17,8 @@ class CategoriesController extends Controller
     public function index()
     {
         $docs = DocumentationCategory::query()
-        ->when(isset(request()->id) && request()->id > 0, fn ($q) => $q->where('id', request()->id))
-        ->when(isset(request()->parent_category_id), fn ($q) => $q->where('parent_category_id', request()->parent_category_id));
+            ->when(isset(request()->id) && request()->id > 0, fn ($q) => $q->where('id', request()->id))
+            ->when(isset(request()->parent_category_id), fn ($q) => $q->where('parent_category_id', request()->parent_category_id));
 
         $res = SearchRepo::of($docs, ['id', 'title', 'image'])
             ->sortable(['id', 'image'])
@@ -76,6 +76,7 @@ class CategoriesController extends Controller
             'description' => 'nullable|string|max:255',
             'image' => 'required|image',
             'parent_category_id' => 'nullable|exists:documentation_categories,id',
+            'priority_number' => 'nullable|integer|between:0,99999999',
         ]);
 
         if ($request->slug) {
@@ -83,26 +84,32 @@ class CategoriesController extends Controller
         } else {
             // Generate the slug from the title and parent_category slug
             $slug = Str::slug($validatedData['title']);
-            if (!$request->id) {
 
-                // Check if the generated slug is unique, if not, add a prefix
-                $parent_category_id = $request->parent_category_id;
-                while ($parent_category_id > 0) {
-                    $category = DocumentationCategory::find($parent_category_id);
-                    if ($category) {
-                        $slug = $category->slug . '-' . $slug;
-                        break;
-                    } else {
-                        break;
-                    }
-                }
 
-                // Check if the generated slug is unique, if not, add a suffix
-                $count = 1;
-                while (DocumentationCategory::where('slug', $slug)->exists()) {
-                    $slug = Str::slug($slug) . '-' . Str::random($count);
-                    $count++;
+            if ($request->id) {
+                $exists = DocumentationCategory::find($request->id);
+                if ($exists) {
+                    $request->merge(['parent_category_id' => $exists->parent_category_id]);
                 }
+            }
+
+            // Check if the generated slug is unique, if not, add a prefix
+            $parent_category_id = $request->parent_category_id;
+            while ($parent_category_id > 0) {
+                $category = DocumentationCategory::find($parent_category_id);
+                if ($category) {
+                    $slug = $category->slug . '-' . $slug;
+                    break;
+                } else {
+                    break;
+                }
+            }
+
+            // Check if the generated slug is unique, if not, add a suffix
+            $count = 1;
+            while (DocumentationCategory::where('slug', $slug)->exists()) {
+                $slug = Str::slug($slug) . '-' . Str::random($count);
+                $count++;
             }
         }
 
@@ -113,7 +120,7 @@ class CategoriesController extends Controller
         }
 
         // Create a new Documentation instance with the validated data
-        $validatedData['title']= Str::title($validatedData['title']);
+        $validatedData['title'] = Str::title($validatedData['title']);
 
         $documentation = DocumentationCategory::updateOrCreate(['id' => $request->id], $validatedData);
 

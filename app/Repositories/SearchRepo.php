@@ -383,6 +383,7 @@ class SearchRepo
         $guess_array = [
             'name' => ['input' => 'input', 'type' => 'name'],
             'email' => ['input' => 'input', 'type' => 'email'],
+            'priority_number' => ['input' => 'input', 'type' => 'number'],
             'priority_no' => ['input' => 'input', 'type' => 'number'],
 
             'content*' => ['input' => 'textarea', 'type' => null],

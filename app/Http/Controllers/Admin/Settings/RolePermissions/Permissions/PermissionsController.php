@@ -22,7 +22,8 @@ class PermissionsController extends Controller
         if (request()->all == '1')
             return response(['results' => $permissions->get()]);
 
-        $permissions = SearchRepo::of($permissions, ['name'], ['name', 'id'], ['name', 'guard_name'])
+        $permissions = SearchRepo::of($permissions, ['name'], ['name', 'id'])
+            ->fillable(['name', 'guard_name'])
             ->addColumn('action', function ($permission) {
                 return '
         <div class="dropdown">

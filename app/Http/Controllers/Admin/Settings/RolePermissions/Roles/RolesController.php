@@ -8,6 +8,7 @@ use Spatie\Permission\Models\Role;
 use App\Repositories\SearchRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+
 class RolesController extends Controller
 {
 
@@ -19,7 +20,8 @@ class RolesController extends Controller
         if (request()->all == '1')
             return response(['results' => $roles->get()]);
 
-        $roles = SearchRepo::of($roles, ['name'], ['name', 'id'], ['name', 'guard_name'])
+        $roles = SearchRepo::of($roles, ['name'], ['name', 'id'])
+            ->fillable(['name', 'guard_name'])
             ->addColumn('action', function ($role) {
                 return '
         <div class="dropdown">

@@ -73,6 +73,7 @@ class TopicsController extends Controller
             ],
             'description' => 'nullable|string|max:255',
             'image' => 'required|image',
+            'priority_number' => 'nullable|integer|between:0,99999999',
         ]);
 
         if ($request->slug) {
