@@ -5,18 +5,20 @@ namespace App\Http\Controllers\Admin\DocumentationPages\Categories;
 use App\Http\Controllers\Admin\DocumentationPages\Categories\Topics\TopicsController;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentationCategory;
-use App\Models\DocumentationTopic;
 use App\Models\PostStatus;
 use App\Repositories\SearchRepo;
 use App\Services\Filerepo\Controllers\FilesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CategoriesController extends Controller
 {
     public function index()
     {
-        $docs = DocumentationCategory::query();
+        $docs = DocumentationCategory::query()
+        ->when(isset(request()->id) && request()->id > 0, fn ($q) => $q->where('id', request()->id))
+        ->when(isset(request()->parent_category_id), fn ($q) => $q->where('parent_category_id', request()->parent_category_id));
 
         $res = SearchRepo::of($docs, ['id', 'title', 'image'])
             ->sortable(['id', 'image'])
@@ -28,16 +30,16 @@ class CategoriesController extends Controller
                         <i class="icon icon-list2 font-20"></i>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item autotable-navigate" href="/admin/docs/categories/' . $item->slug . '">View</a></li>
+                            <li><a class="dropdown-item autotable-navigate" href="/admin/docs/' . $item->slug . '">View</a></li>
                             '
                     .
                     (checkPermission('docs.categories', 'post') ?
-                        '<li><a class="dropdown-item autotable-edit" data-id="' . $item->id . '" href="/admin/docs/categories/' . $item->slug . '/edit">Edit</a></li>'
+                        '<li><a class="dropdown-item autotable-edit" data-id="' . $item->id . '" href="/admin/docs/categories/' . $item->id . '">Edit</a></li>'
                         :
                         '')
                     .
                     '
-                            <li><a class="dropdown-item autotable-status-update" data-id="' . $item->id . '" href="/admin/docs/categories/' . $item->slug . '/status-update">' . ($item->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
+                            <li><a class="dropdown-item autotable-status-update" data-id="' . $item->id . '" href="/admin/docs/' . $item->slug . '/status-update">' . ($item->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
                         </ul>
                     </div>
                     ';
@@ -49,7 +51,7 @@ class CategoriesController extends Controller
 
     public function create()
     {
-        // Show the create docs/categories/doc page form
+        // Show the create docs/doc page form
     }
 
     public function store(Request $request)
@@ -57,35 +59,61 @@ class CategoriesController extends Controller
 
         // Validate the incoming request data
         $validatedData = $request->validate([
-            'title' => 'required|string|max:255|unique:documentation_topics,title,' . $request->id . ',id', // Ensure title is unique
-            'slug' => 'nullable|string|max:255|unique:documentation_topics,slug,' . $request->id . ',id', // Ensure slug is unique
+            'title' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('documentation_categories', 'title')->where(function ($query) use ($request) {
+                    return $query->where('parent_category_id', $request->parent_category_id);
+                })->ignore($request->id),
+            ],
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('documentation_categories', 'slug')->ignore($request->id),
+            ],
+            'description' => 'nullable|string|max:255',
             'image' => 'required|image',
+            'parent_category_id' => 'nullable|exists:documentation_categories,id',
         ]);
 
         if ($request->slug) {
             $slug = Str::slug($validatedData['slug']);
         } else {
-            // Generate the slug from the title
+            // Generate the slug from the title and parent_category slug
             $slug = Str::slug($validatedData['title']);
-        }
+            if (!$request->id) {
 
-        if (!$request->id) {
+                // Check if the generated slug is unique, if not, add a prefix
+                $parent_category_id = $request->parent_category_id;
+                while ($parent_category_id > 0) {
+                    $category = DocumentationCategory::find($parent_category_id);
+                    if ($category) {
+                        $slug = $category->slug . '-' . $slug;
+                        break;
+                    } else {
+                        break;
+                    }
+                }
 
-            // Check if the generated slug is unique, if not, add a suffix
-            $count = 1;
-            while (DocumentationCategory::where('slug', $slug)->exists()) {
-                $slug = Str::slug($slug) . '-' . $count;
-                $count++;
+                // Check if the generated slug is unique, if not, add a suffix
+                $count = 1;
+                while (DocumentationCategory::where('slug', $slug)->exists()) {
+                    $slug = Str::slug($slug) . '-' . Str::random($count);
+                    $count++;
+                }
             }
         }
 
         // Include the generated slug in the validated data
-        $validatedData['slug'] = $slug;
+        $validatedData['slug'] = Str::lower($slug);
         if (!$request->id) {
             $validatedData['user_id'] = auth()->user()->id;
         }
 
         // Create a new Documentation instance with the validated data
+        $validatedData['title']= Str::title($validatedData['title']);
 
         $documentation = DocumentationCategory::updateOrCreate(['id' => $request->id], $validatedData);
 
@@ -101,7 +129,7 @@ class CategoriesController extends Controller
         $action = 'created';
         if ($request->id)
             $action = 'updated';
-        return response(['type' => 'success', 'message' => 'Documentation topic ' . $action . ' successfully', 'results' => $documentation]);
+        return response(['type' => 'success', 'message' => 'Documentation category ' . $action . ' successfully', 'results' => $documentation]);
     }
 
     function update(Request $request, $id)

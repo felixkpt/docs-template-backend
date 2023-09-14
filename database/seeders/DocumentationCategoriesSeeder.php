@@ -11,10 +11,10 @@ class DocumentationCategoriesSeeder extends Seeder
     public function run()
     {
         $sections = [
-            ['title' => 'Frontend Documentation'],
-            ['title' => 'Backend Documentation'],
-            ['title' => 'API Documentation'],
             ['title' => 'General Usage'],
+            ['title' => 'Frontend Documentation'],
+            ['title' => 'API Documentation'],
+            ['title' => 'Backend Documentation'],
         ];
 
         foreach ($sections as $section) {

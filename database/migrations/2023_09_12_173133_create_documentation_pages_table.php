@@ -15,10 +15,9 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('category_id');
             $table->foreign('category_id')->references('id')->on('documentation_categories');
-            $table->unsignedBigInteger('topic_id');
-            $table->foreign('topic_id')->references('id')->on('documentation_topics');
+            $table->unsignedBigInteger('topic_id')->nullable();
             $table->string('title');
-            $table->string('slug');
+            $table->string('slug')->unique();
             $table->string('content_short')->nullable();
             $table->longText('content');
             $table->string('image')->nullable();

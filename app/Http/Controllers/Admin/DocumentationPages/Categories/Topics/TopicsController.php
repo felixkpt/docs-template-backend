@@ -9,6 +9,7 @@ use App\Repositories\SearchRepo;
 use App\Services\Filerepo\Controllers\FilesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class TopicsController extends Controller
 {
@@ -33,11 +34,11 @@ class TopicsController extends Controller
                         <i class="icon icon-list2 font-20"></i>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item autotable-view" href="/admin/docs/categories/' . $item->id . '/topics/detail/' . $item->id . '">View</a></li>
+                            <li><a class="dropdown-item autotable-view" data-id="' . $item->id . '" href="/admin/docs/categories/topics/detail/' . $item->id . '">View</a></li>
                             '
                     .
                     (checkPermission('docs.categories.topics', 'post') ?
-                        '<li><a class="dropdown-item autotable-edit" data-id="' . $item->id . '" href="/admin/docs/categories/' . $item->id . '/topics/detail/' . $item->id . '/edit">Edit</a></li>'
+                        '<li><a class="dropdown-item autotable-edit" data-id="' . $item->id . '" href="/admin/docs/categories/topics/' . $item->id . '">Edit</a></li>'
                         :
                         '')
                     .
@@ -63,8 +64,14 @@ class TopicsController extends Controller
         // Validate the incoming request data
         $validatedData = $request->validate([
             'category_id' => 'required|exists:documentation_categories,id', // Ensure id exists
-            'title' => 'required|string|max:255|unique:documentation_topics,title,' . $request->id . ',id', // Ensure title is unique
-            'slug' => 'nullable|string|max:255|unique:documentation_topics,slug,' . $request->id . ',id', // Ensure slug is unique
+            'title' => 'required|string|max:255',
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('documentation_topics', 'slug')->ignore($request->id),
+            ],
+            'description' => 'nullable|string|max:255',
             'image' => 'required|image',
         ]);
 
@@ -73,20 +80,20 @@ class TopicsController extends Controller
         } else {
             // Generate the slug from the title
             $slug = Str::slug($validatedData['title']);
-        }
 
-        if (!$request->id) {
+            if (!$request->id) {
 
-            // Check if the generated slug is unique, if not, add a suffix
-            $count = 1;
-            while (DocumentationTopic::where('slug', $slug)->exists()) {
-                $slug = Str::slug($slug) . '-' . $count;
-                $count++;
+                // Check if the generated slug is unique, if not, add a suffix
+                $count = 1;
+                while (DocumentationTopic::where('slug', $slug)->exists()) {
+                    $slug = Str::slug($slug) . '-' . Str::random($count);
+                    $count++;
+                }
             }
         }
 
         // Include the generated slug in the validated data
-        $validatedData['slug'] = $slug;
+        $validatedData['slug'] = Str::lower($slug);
         if (!$request->id) {
             $validatedData['user_id'] = auth()->user()->id;
         }
@@ -108,5 +115,11 @@ class TopicsController extends Controller
         if ($request->id)
             $action = 'updated';
         return response(['type' => 'success', 'message' => 'Documentation topic ' . $action . ' successfully', 'results' => $documentation]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        request()->merge(['id' => $id]);
+        return $this->store($request);
     }
 }

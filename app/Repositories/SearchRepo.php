@@ -356,7 +356,7 @@ class SearchRepo
         $fillable = $this->fillable;
 
         if (count($fillable) === 0  && $this->model) {
-            $fill = $this->model->getFillable();
+            $fill = $this->model->getFillable(true);
             $fill = array_diff($fill, $this->excludeFromFillables);
             $fillable = $fill;
         }
@@ -396,9 +396,9 @@ class SearchRepo
             '*_multilist'  => ['input' => 'multiselect', 'type' => null],
             'guard_name' => ['input' => 'select', 'type' => null],
 
-            'img' => ['input' => 'input', 'type' => 'file'],
-            'image' => ['input' => 'input', 'type' => 'file'],
-            'avatar' => ['input' => 'input', 'type' => 'file'],
+            'img' => ['input' => 'input', 'type' => 'file', 'accept' => 'image/*'],
+            'image' => ['input' => 'input', 'type' => 'file', 'accept' => 'image/*'],
+            'avatar' => ['input' => 'input', 'type' => 'file', 'accept' => 'image/*'],
 
             '*_time' => ['input' => 'input', 'type' => 'datetime-local'],
             '*_name' => ['input' => 'input', 'type' => 'name'],
@@ -425,6 +425,8 @@ class SearchRepo
             if ($matchedType) {
                 $guessed[$field]['input'] = $matchedType['input'];
                 $guessed[$field]['type'] = $matchedType['type'];
+                if (isset($matchedType['accept']))
+                    $guessed[$field]['accept'] = $matchedType['accept'];
             } else {
                 $guessed[$field] = ['input' => 'input', 'type' => 'text'];
             }

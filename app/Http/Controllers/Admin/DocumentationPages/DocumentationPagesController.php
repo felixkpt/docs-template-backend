@@ -55,28 +55,32 @@ class DocumentationPagesController extends Controller
         // Validate the incoming request data
         $validatedData = $request->validate([
             'category_id' => 'required|exists:documentation_categories,id',
-            'topic_id' => 'required|exists:documentation_topics,id',
+            'topic_id' => 'nullable|exists:documentation_topics,id',
             'title' => 'required|string|max:255|unique:documentation_pages,title,' . $request->id . ',id', // Ensure title is unique
             'content_short' => 'required|string|max:255',
             'content' => 'required|string',
             'image' => 'required|image',
         ]);
 
-        // Generate the slug from the title
-        $slug = Str::slug($validatedData['title']);
+        if ($request->slug) {
+            $slug = Str::slug($validatedData['slug']);
+        } else {
+            // Generate the slug from the title
+            $slug = Str::slug($validatedData['title']);
 
-        if (!$request->id) {
+            if (!$request->id) {
 
-            // Check if the generated slug is unique, if not, add a suffix
-            $count = 1;
-            while (DocumentationPage::where('slug', $slug)->exists()) {
-                $slug = Str::slug($validatedData['title']) . '-' . $count;
-                $count++;
+                // Check if the generated slug is unique, if not, add a suffix
+                $count = 1;
+                while (DocumentationPage::where('slug', $slug)->exists()) {
+                    $slug = Str::slug($slug) . '-' . Str::random($count);
+                    $count++;
+                }
             }
         }
 
         // Include the generated slug in the validated data
-        $validatedData['slug'] = $slug;
+        $validatedData['slug'] = Str::lower($slug);
         if (!$request->id) {
             $validatedData['user_id'] = auth()->user()->id;
         }
