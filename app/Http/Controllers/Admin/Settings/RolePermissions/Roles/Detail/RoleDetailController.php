@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Settings\RolePermissions\Roles\Detail;
 
+use App\Http\Controllers\Admin\Settings\RolePermissions\Roles\RolesController;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Exception;
@@ -32,12 +33,6 @@ class RoleDetailController extends Controller
             'status' => true,
             'results' => $role,
         ]);
-    }
-
-    function update(Request $request, $id)
-    {
-        $request->merge(['id' => $id]);
-        return $this->store($request);
     }
 
     /**
@@ -116,6 +111,12 @@ class RoleDetailController extends Controller
                 'message' => $e->getMessage(),
             ]);
         }
+    }
+
+    function update(Request $request, $id)
+    {
+        $request->merge(['id' => $id]);
+        return app(RolesController::class)->store($request);
     }
 
     function storeRoleMenuAndCleanPermissions(Request $request, $id)
@@ -207,7 +208,7 @@ class RoleDetailController extends Controller
         // a user can have more than 1 roles
         $role = Role::find($id);
         if (!$role) {
-            return response()->json(['message' => 'Role not found'], 404);
+            return response()->json(['message' => 'Role not found!!'], 404);
         }
 
         // save user's default_role_id
@@ -298,9 +299,11 @@ class RoleDetailController extends Controller
         return response(['results' => $user, 'message' => "{$user->name} added to role {$role->name}"]);
     }
 
-    function statusUpdate($id) {
+    function statusUpdate($id)
+    {
         $status_id = request()->status_id;
         Role::find($id)->update(['status_id' => $status_id]);
-        return response(['message' => "Status updated successfully."]);        
+        return response(['message' => "Status updated successfully."]);
     }
+
 }

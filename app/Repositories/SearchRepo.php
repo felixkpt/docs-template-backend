@@ -33,7 +33,9 @@ class SearchRepo
     protected $sortable = [];
     protected $model;
     protected $model_name = '';
-    protected $fillable = [];
+    protected $fillable;
+    protected $addedFillable = [];
+    protected $removedFillable = [];
     protected $excludeFromFillables = ['user_id', 'status_id'];
     protected $statuses = [];
     protected $request_data;
@@ -103,7 +105,7 @@ class SearchRepo
                 $builder = $builder->where(function ($q) use ($searchable, $term, $model_table, $strategy) {
 
                     foreach ($searchable as $column) {
-                        Log::info('Searching:', ['term' => $term, 'model_table' => $model_table, 'col' => $column]);
+                        // Log::info('Searching:', ['term' => $term, 'model_table' => $model_table, 'col' => $column]);
 
                         if (Str::contains($column, '.')) {
 
@@ -119,7 +121,7 @@ class SearchRepo
                             // Apply search condition on the main table
                             $q->orWhere($model_table . '.' . $column, $strategy === 'like' ? 'like' : '=', $strategy === 'like' ? "%$term%" : "$term");
 
-                            Log::critical("Search results:", ['res' => $q->first()]);
+                            // Log::critical("Search results:", ['res' => $q->first()]);
                         }
                     }
                 });
@@ -340,8 +342,34 @@ class SearchRepo
      */
     public function fillable($fillable = [])
     {
-        if (!empty($fillable))
+        if (is_array($fillable))
             $this->fillable = $fillable;
+
+        return $this;
+    }
+
+    /**
+     * Add a custom column to the search results.
+     *
+     * @param string $fillable The column name.
+     * @param string $before The after function to generate the column value.
+     * @param array $inputTypeInfo The input info.
+     */
+    public function addFillable($field, $before = null, $inputTypeInfo = [])
+    {
+        $this->addedFillable[] = [$field, $before, $inputTypeInfo];
+
+        return $this;
+    }
+
+    /**
+     * Add a custom column to the search results.
+     *
+     * @param string $fillable The column name.
+     */
+    public function removeFillable($fields = [])
+    {
+        $this->removedFillable = $fields;
 
         return $this;
     }
@@ -353,13 +381,18 @@ class SearchRepo
      */
     function getCustoms()
     {
+
+        // user supplied fillable
         $fillable = $this->fillable;
 
-        if (count($fillable) === 0  && $this->model) {
+        // model fillable
+        if (!is_array($fillable)  && $this->model) {
             $fill = $this->model->getFillable(true);
             $fill = array_diff($fill, $this->excludeFromFillables);
-            $fillable = $fill;
+            $fillable = array_values($fill);
         }
+
+        $fillable = $this->mergeFillable($fillable);
 
         $statuses = $this->statuses ?: Status::select('id', 'name')->get()->toArray();
 
@@ -372,6 +405,53 @@ class SearchRepo
         return $arr;
     }
 
+    public function mergeFillable($fillable)
+    {
+        $fillable = is_array($fillable) ? $fillable : [];
+
+        $fillable = array_filter($fillable, fn ($item) => !in_array($item, $this->removedFillable));
+
+        $addedFillable = $this->addedFillable;
+
+        if (!empty($addedFillable)) {
+            foreach ($addedFillable as $fill) {
+                [$field, $before] = $fill;
+
+                if (!$before) {
+                    // Merge the new columns with the existing ones.
+                    array_push($fillable, $field);
+                } else {
+                    // Find the position of the specified value in the existing fillable array.
+                    $beforeValIndex = array_search($before, $fillable);
+
+                    if ($beforeValIndex !== false) {
+                        if ($beforeValIndex === 0) {
+                            array_unshift($fillable, $field);
+                            $fillable = array_values($fillable);
+                        } else {
+
+                            // Split the array into two parts.
+                            $before = array_values(array_slice($fillable, 0, $beforeValIndex));
+
+                            array_push($before, $field);
+
+                            $after = array_values(array_slice($fillable, $beforeValIndex));
+
+                            // Merge the new columns in between.
+                            $fillable = array_merge($before, $after);
+                        }
+                    } else {
+                        // If the value is not found, perform normal array push.
+                        array_push($fillable, $field);
+                    }
+                }
+            }
+        }
+
+        return array_values($fillable);
+    }
+
+
     /**
      * Get an array of guessed input types for fillable columns.
      *
@@ -383,11 +463,13 @@ class SearchRepo
         $guess_array = [
             'name' => ['input' => 'input', 'type' => 'name'],
             'email' => ['input' => 'input', 'type' => 'email'],
+            'password' => ['input' => 'input', 'type' => 'password'],
+            'password_confirmation' => ['input' => 'input', 'type' => 'password'],
             'priority_number' => ['input' => 'input', 'type' => 'number'],
             'priority_no' => ['input' => 'input', 'type' => 'number'],
 
-            'content*' => ['input' => 'textarea', 'type' => null],
-            'description*' => ['input' => 'textarea', 'type' => null],
+            'content*' => ['input' => 'textarea', 'type' => null, 'rows' => 10],
+            'description*' => ['input' => 'textarea', 'type' => null], 'rows' => 10,
 
             'text' => ['input' => 'input', 'type' => 'url'],
 
@@ -411,6 +493,15 @@ class SearchRepo
             'is_*' => ['input' => 'input', 'type' => 'checkbox'],
         ];
 
+        foreach ($this->addedFillable as $fill) {
+
+            [$field, $before, $inputTypeInfo] = $fill;
+
+            if (is_array($inputTypeInfo) && count($inputTypeInfo) > 0) {
+                $guess_array[$field] = $inputTypeInfo;
+            }
+        }
+
         $guessed = [];
 
         foreach ($fillable as $field) {
@@ -426,6 +517,16 @@ class SearchRepo
             if ($matchedType) {
                 $guessed[$field]['input'] = $matchedType['input'];
                 $guessed[$field]['type'] = $matchedType['type'];
+
+                if (isset($matchedType['min']))
+                    $guessed[$field]['min'] = $matchedType['min'];
+
+                if (isset($matchedType['max']))
+                    $guessed[$field]['max'] = $matchedType['max'];
+
+                if (isset($matchedType['rows']))
+                    $guessed[$field]['rows'] = $matchedType['rows'];
+
                 if (isset($matchedType['accept']))
                     $guessed[$field]['accept'] = $matchedType['accept'];
             } else {

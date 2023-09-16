@@ -44,7 +44,6 @@ class NestedRoutesAuthMiddleware
      */
     public function handle($request, Closure $next)
     {
-        // App::abort(403, "Not authorized to access this page/resource/endpoint");
 
         // Set up necessary data for authorization checks...
         if ($request) {
@@ -69,9 +68,6 @@ class NestedRoutesAuthMiddleware
      */
     public function check()
     {
-        // Dummy implementation, change as per your requirements...
-        // return true;
-        // $this->user = null;
 
         $current = rtrim(request()->getPathInfo(), '/');
 
@@ -93,6 +89,7 @@ class NestedRoutesAuthMiddleware
      */
     protected function authorize($currentRoute)
     {
+
 
         // Define routes that are allowed without specific permissions...
         $allowedRoutes = [
@@ -117,12 +114,13 @@ class NestedRoutesAuthMiddleware
 
         $user = $this->user;
 
-        // if ($user->email !== 'admin@example.com') {
-        return true;
-        // }
-
         // Retrieve permissions inherited from the user's default_role_id
-        $permissions = Role::findOrFail($user->default_role_id)->permissions->pluck('uri');
+        $role = Role::find($user->default_role_id);
+        if ($role) {
+            $permissions = $role->permissions->pluck('uri') ?? [];
+        } else {
+            abort(404, 'User default role not found!');
+        }
 
         // Get the current route and request method...
         $incoming_route = Str::after(Route::getCurrentRoute()->uri, 'api/');
@@ -136,8 +134,7 @@ class NestedRoutesAuthMiddleware
 
             $methods = array_filter(explode('@', str_replace('|', '', $res[1] ?? '')));
 
-            // For testing purposes, allow all methods to access the route...
-            $methods = [...$methods, 'GET'];
+            $methods = [...$methods];
 
             // Check if the current route and method match the user's permissions...
             if ($incoming_route == $curr_route) {
@@ -165,11 +162,6 @@ class NestedRoutesAuthMiddleware
      */
     public function unauthorize($status = 403, $message = null)
     {
-        // Define common paths that do not require authorization checks...
-        $common_paths = ['logout', 'login', 'register'];
-        $path = $this->path;
-        if (!in_array($path, $common_paths)) {
-            App::abort($status, ($status === 405 ? "Not authorized to perform the current method on" : "Not authorized to access") . " this page/resource/endpoint");
-        }
+        App::abort($status, ($status === 405 ? "Not authorized to perform the current method on" : "Not authorized to access") . " this page/resource/endpoint");
     }
 }

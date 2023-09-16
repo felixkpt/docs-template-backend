@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use App\Traits\RemoveHiddenFromFillable;
+use App\Traits\ExcludeSystemFillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DocumentationCategory extends Model
 {
-    use HasFactory, RemoveHiddenFromFillable;
+    use HasFactory, ExcludeSystemFillable;
     protected $fillable = ['title', 'slug', 'description', 'image', 'status_id', 'user_id', 'parent_category_id', 'priority_number'];
-    protected $hidden = ['parent_category_id'];
+    protected $systemFillable = ['parent_category_id'];
 }

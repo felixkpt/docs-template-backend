@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Traits\ExcludeSystemFillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,7 +14,11 @@ use Spatie\Permission\Traits\HasPermissions;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use HasApiTokens,
+        HasFactory,
+        Notifiable,
+        HasRoles,
+        ExcludeSystemFillable;
 
     // Use an alias for the permissions relationship
     use HasPermissions {
@@ -31,7 +37,6 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
-        'role',
         'status',
         'two_factor_valid',
         'last_login_date',
@@ -47,9 +52,27 @@ class User extends Authenticatable
         'is_online',
         'remember_token',
         'two_factor_enabled',
-        'is_calltronix',
         'theme',
         'default_role_id',
+    ];
+
+    protected $systemFillable = [
+        'status',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'two_factor_valid',
+        'last_login_date',
+        'two_factor_expires_at',
+        'two_factor_code',
+        'email_verified_at',
+        'api_token',
+        'session_id',
+        'is_session_valid',
+        'is_online',
+        'remember_token',
+        'theme',
+        'default_role_id'
     ];
 
     /**
@@ -59,6 +82,18 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'remember_token',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'two_factor_valid',
+        'last_login_date',
+        'two_factor_expires_at',
+        'two_factor_code',
+        'email_verified_at',
+        'session_id',
+        'is_session_valid',
+        'is_online',
         'remember_token',
     ];
 
@@ -76,5 +111,4 @@ class User extends Authenticatable
     {
         return $this->hasMany(Ticket::class);
     }
-    
 }

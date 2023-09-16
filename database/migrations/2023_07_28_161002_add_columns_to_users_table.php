@@ -24,7 +24,6 @@ return new class extends Migration
             $table->unsignedInteger('allowed_session_no')->default(1);
             $table->unsignedTinyInteger('is_online')->default(0);
             $table->unsignedTinyInteger('two_factor_enabled')->default(1);
-            $table->unsignedTinyInteger('is_calltronix')->default(0);
             $table->string('theme')->default('light');
             $table->unsignedInteger('status_id')->default(1);
             $table->unsignedBigInteger('user_id')->default(0);
@@ -48,7 +47,6 @@ return new class extends Migration
             $table->dropColumn('is_online');
             $table->dropColumn('remember_token');
             $table->dropColumn('two_factor_enabled');
-            $table->dropColumn('is_calltronix');
             $table->dropColumn('theme');
             $table->dropColumn('status_id');
             $table->dropColumn('user_id');

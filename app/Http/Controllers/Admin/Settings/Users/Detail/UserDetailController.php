@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Settings\Users\Detail;
 
+use App\Http\Controllers\Admin\Settings\Users\UsersController;
 use App\Http\Controllers\Controller;
 use App\Mail\SendPassword;
 use App\Models\Core\AuthenticationLog;
@@ -21,7 +22,14 @@ class UserDetailController extends Controller
     {
         $user = User::with(['roles', 'direct_permissions'])->where(['users.id' => $id]);
 
-        return response(['results' => SearchRepo::of($user, [], [], ['name', 'email', 'roles_multilist', 'direct_permissions_multilist'])->first()]);
+        return response(['results' => SearchRepo::of($user)
+            ->removeFillable(['password'])
+            ->addFillable('roles_multilist')
+            ->addFillable('direct_permissions_multilist')
+            ->addFillable('two_factor_enabled', 'theme', ['input' => 'input', 'type' => 'checkbox'])
+            ->addFillable('allowed_session_no', 'theme', ['input' => 'input', 'type' => 'number', 'min' => 1, 'max' => 10])
+            ->addFillable('refresh_api_token', null, ['input' => 'input', 'type' => 'checkbox'])
+            ->first()]);
     }
 
     public function edit($id)
@@ -33,48 +41,9 @@ class UserDetailController extends Controller
 
     public function update(Request $request, $id)
     {
+        $request->merge(['id' => strtolower($request->id)]);
 
-        $user = User::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|unique:users,email,' . $user->id,
-            'password' => 'nullable|min:8',
-            'roles_list' => [
-                'required',
-                'array',
-                function ($attribute, $value, $fail) {
-                    if (count(array_filter($value, fn ($role) => $role !== null)) === 0) {
-                        $fail('The roles field must contain at least one role.');
-                    }
-                },
-            ],
-            'direct_permissions_list' => 'nullable|array',
-        ]);
-
-        $request->merge(['roles' => request()->roles_list]);
-        $request->merge(['permissions' => request()->direct_permissions_list]);
-
-
-        $user->update([
-            'name' => $request->input('name'),
-            'email' => $request->input('email'),
-            'password' => $request->input('password') ? bcrypt($request->input('password')) : $user->password,
-        ]);
-
-        if ($request->roles) {
-
-            $roles = Role::whereIn('id', $request->input('roles'))->get();
-            $user->syncRoles($roles);
-        }
-
-        if ($request->permissions) {
-
-            $permissions = Permission::whereIn('id', $request->input('permissions'))->get();
-            $user->syncPermissions($permissions);
-        }
-
-        return response(['message' => 'User updated successfully.']);
+        return app(UsersController::class)->store($request, $id);
     }
 
     function profileShow()

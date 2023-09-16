@@ -20,7 +20,7 @@ class RolesController extends Controller
         if (request()->all == '1')
             return response(['results' => $roles->get()]);
 
-        $roles = SearchRepo::of($roles, ['name'], ['name', 'id'])
+        $roles = SearchRepo::of($roles, ['name', 'id'])
             ->fillable(['name', 'guard_name'])
             ->addColumn('action', function ($role) {
                 return '
@@ -30,7 +30,7 @@ class RolesController extends Controller
             </button>
             <ul class="dropdown-menu">
                 <li><a class="dropdown-item autotable-navigate" href="/admin/settings/role-permissions/roles/detail/' . $role->id . '">View</a></li>
-                <li><a class="dropdown-item autotable-edit" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/detail/' . $role->id . '/edit">Edit</a></li>
+                <li><a class="dropdown-item autotable-edit" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/detail/' . $role->id . '">Edit</a></li>
                 <li><a class="dropdown-item autotable-status-update" data-id="' . $role->id . '" href="/admin/settings/role-permissions/roles/detail/' . $role->id . '/status-update">' . ($role->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
             </ul>
         </div>
@@ -70,20 +70,6 @@ class RolesController extends Controller
         return response(['type' => 'success', 'message' => 'Role ' . $action . ' successfully', 'results' => $res]);
     }
 
-    function update(Request $request, $id)
-    {
-        $request->merge(['id' => $id]);
-        return $this->store($request);
-    }
-
-    public function show($id)
-    {
-        $role = Role::findOrFail($id);
-        return response()->json([
-            'status' => true,
-            'results' => $role,
-        ]);
-    }
 
     function getUserRolesAndDirectPermissions()
     {

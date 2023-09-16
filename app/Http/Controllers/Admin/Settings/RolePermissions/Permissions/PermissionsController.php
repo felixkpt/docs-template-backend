@@ -3,13 +3,10 @@
 namespace App\Http\Controllers\Admin\Settings\RolePermissions\Permissions;
 
 use App\Http\Controllers\Controller;
-use App\Models\Permission as ModelsPermission;
+use App\Models\Permission;
 use App\Repositories\SearchRepo;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class PermissionsController extends Controller
@@ -22,7 +19,7 @@ class PermissionsController extends Controller
         if (request()->all == '1')
             return response(['results' => $permissions->get()]);
 
-        $permissions = SearchRepo::of($permissions, ['name'], ['name', 'id'])
+        $permissions = SearchRepo::of($permissions, ['name', 'id'])
             ->fillable(['name', 'guard_name'])
             ->addColumn('action', function ($permission) {
                 return '
@@ -31,7 +28,7 @@ class PermissionsController extends Controller
             <i class="icon icon-list2 font-20"></i>
             </button>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item autotable-view" href="/admin/settings/role-permissions/detail/' . $permission->id . '">View</a></li>
+                <li><a class="dropdown-item autotable-view" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/detail/' . $permission->id . '">View</a></li>
                 <li><a class="dropdown-item autotable-edit" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/permissions/detail/' . $permission->id . '">Edit</a></li>
                 <li><a class="dropdown-item autotable-status-update" data-id="' . $permission->id . '" href="/admin/settings/role-permissions/permissions/detail/' . $permission->id . '/status-update">' . ($permission->status == 1 ? 'Deactivate' : 'Activate') . '</a></li>
             </ul>
@@ -98,7 +95,6 @@ class PermissionsController extends Controller
 
     function getRolePermissions($role_id)
     {
-
 
         if ($role_id === 'all') {
             $permissions = Permission::whereNotNull('uri');

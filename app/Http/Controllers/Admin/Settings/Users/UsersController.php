@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Repositories\SearchRepo;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Permission;
 
 class UsersController extends Controller
@@ -30,6 +32,11 @@ class UsersController extends Controller
             ->addColumn('Roles', function ($user) {
                 return implode(', ', $user->roles()->get()->pluck('name')->toArray());
             })
+            ->addFillable('password_confirmation', 'avatar')
+            ->addFillable('roles_multilist')
+            ->addFillable('direct_permissions_multilist')
+            ->addFillable('two_factor_enabled', 'theme', ['input' => 'input', 'type' => 'checkbox'])
+            ->addFillable('allowed_session_no', 'theme', ['input' => 'input', 'type' => 'number', 'min' => 1, 'max' => 10])
             ->addColumn('action', function ($user) {
                 return '
     <div class="dropdown">
@@ -57,40 +64,64 @@ class UsersController extends Controller
 
     public function create()
     {
-
         return response(['status' => true, 'results' => null]);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+
+        Log::info('in', [$request->all()]);
+
+        $rules = [
             'name' => 'required',
-            'email' => 'required|unique:users,email',
-            'password' => 'required|min:8',
-            'roles' => 'required|array',
-            'permissions' => 'nullable|array',
-        ]);
+            'email' => 'required|unique:users,email,' . $request->id,
+            'phone' => 'nullable|min:4|max:10|unique:users,phone,' . $request->id,
+            'roles_list' => 'required|array|min:1|max:10',
+            'direct_permissions_list' => 'nullable|array',
+        ];
 
-        $user = User::create([
-            'name' => $request->input('name'),
-            'email' => $request->input('email'),
-            'password' => bcrypt($request->input('password')),
-        ]);
-
-        if ($request->roles) {
-            $roles = Role::whereIn('id', $request->input('role_id'))->get();
-            foreach ($roles as $r)
-                $user->syncRoles([$r->name]);
+        if (!$request->id) {
+            $rules = array_merge($rules, [
+                'password' => 'required|confirmed|min:8',
+                'password_confirmation' => 'required',
+            ]);
         }
 
-        if ($request->permissions) {
-            $permissions = Permission::whereIn('id', $request->input('role_id'))->get();
-            foreach ($roles as $r)
-                $user->syncRoles([$r->name]);
+        $request->validate($rules);
+
+        $request->merge([
+            'email' => strtolower($request->email),
+            'two_factor_enabled' => !!$request->two_factor_enabled
+        ]);
+
+        if (!$request->id || $request->refresh_api_token) {
+            $request->merge([
+                'api_token' => Str::random(20),
+            ]);
         }
 
-        return redirect()->route('users.index')
-            ->with('success', 'User created successfully.');
+        $data = $request->all();
+
+        $data['password'] = bcrypt($request->input('password'));
+
+        $user = User::updateOrCreate(['id' => $request->id], $data);
+
+        if (!$user->default_role_id) {
+            $user->default_role_id = $request->roles_list[0];
+            $user->save();
+        }
+
+        if ($request->roles_list) {
+            $roles = Role::whereIn('id', $request->roles_list)->get();
+            $user->syncRoles($roles);
+        }
+
+        if ($request->direct_permissions_list) {
+            $permissions = Permission::whereIn('id', $request->direct_permissions_list)->get();
+            $user->syncPermissions($permissions);
+        }
+
+        return response(['message' => 'User ' . ($request->id ? 'updated' : 'created') . ' successfully.']);
     }
 
     public function edit($id)
@@ -100,35 +131,35 @@ class UsersController extends Controller
         return response(['status' => true, 'results' => $user]);
     }
 
-    public function update(Request $request, User $user)
-    {
+    // public function update(Request $request, User $user)
+    // {
 
-        $request->merge(['roles' => json_decode(request()->roles)]);
+    //     $request->merge(['roles' => json_decode(request()->roles)]);
 
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|unique:users,email,' . $user->id,
-            'password' => 'nullable|min:8',
-            'roles' => 'required|array',
-        ]);
+    //     $request->validate([
+    //         'name' => 'required',
+    //         'email' => 'required|unique:users,email,' . $user->id,
+    //         'password' => 'nullable|min:8',
+    //         'roles' => 'required|array',
+    //     ]);
 
-        $user->update([
-            'name' => $request->input('name'),
-            'email' => $request->input('email'),
-            'password' => $request->input('password') ? bcrypt($request->input('password')) : $user->password,
-        ]);
+    //     $user->update([
+    //         'name' => $request->input('name'),
+    //         'email' => $request->input('email'),
+    //         'password' => $request->input('password') ? bcrypt($request->input('password')) : $user->password,
+    //     ]);
 
-        if ($request->roles) {
+    //     if ($request->roles) {
 
-            $roles = Role::whereIn('id', $request->input('roles'))->get();
-            $user->syncRoles($roles);
-        }
+    //         $roles = Role::whereIn('id', $request->input('roles'))->get();
+    //         $user->syncRoles($roles);
+    //     }
 
-        // Additional logic if needed
+    //     // Additional logic if needed
 
-        return redirect()->route('users.index')
-            ->with('success', 'User updated successfully.');
-    }
+    //     return redirect()->route('users.index')
+    //         ->with('success', 'User updated successfully.');
+    // }
 
     public function destroy(User $user)
     {
